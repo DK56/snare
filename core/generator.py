@@ -24,3 +24,8 @@ class Generator():
         order = map(lambda layer: layer.name, self.model.layers)
         model_structure_init = ModelStructure(order, layer_dict, weights_dict)
         self.gens.append([model_structure_init])
+
+    def get_model_structure(self, gen, i):
+        assert gen >= 0 and gen < len(self.gens)
+        assert i >= 0 and i < len(self.gens[gen])
+        return self.gens[gen][i]
