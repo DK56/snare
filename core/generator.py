@@ -25,7 +25,7 @@ class Generator():
         weights_dict = splitter.split_weights_to_dir(gen_0_path)
         order = map(lambda layer: layer.name, self.model.layers)
         model_structure_init = ModelStructure(order, layer_dict, weights_dict)
-        self.gens.append(Generation(0, model_structure_init, 0))
+        self.gens.append(Generation(0, model_structure_init))
         self.current_gen = 0
 
     def build_next_gen(self):
@@ -36,8 +36,6 @@ class Generator():
         gen_n_path = os.path.join(self.tmp_path, 'gen_' + current_gen)
         assert not os.path.exists(gen_n_path)
         os.mkdir(gen_n_path)
-
-        best_model_structure = self.gens[current_gen - 1]
 
         self.current_gen = current_gen
         # Build gen_0
