@@ -3,6 +3,7 @@ from tensorflow.python.keras.models import Sequential
 from .generation import Generation
 from .model_splitter import ModelSplitter
 from .model_structure import ModelStructure
+from .operation import prune_low_magnitude_neurons, InputPruner, NeuronPruner
 
 
 class Generator():

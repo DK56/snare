@@ -1,8 +1,8 @@
 import numpy as np
-from .. import Weightprovider
+from .model_structure import WeightsProvider
 
 
-class Operation(Weightprovider):
+class Operation(WeightsProvider):
 
     def __init__(self, weights_provider):
         self.weights_provider = weights_provider
@@ -24,8 +24,13 @@ class NeuronPruner(Operation):
         weights = self.weights_provider.get()
         w = weights[0]
         b = weights[1]
-        w = np.delete(w, self.to_remove, len(w) - 1)
+        print(self.to_remove.shape)
+        print(w.shape)
+        print(b.shape)
+        w = np.delete(w, self.to_remove, w.ndim - 1)
         b = np.delete(b, self.to_remove)
+        print(w.shape)
+        print(b.shape)
         return [w, b]
 
     def update_config(self, config):
@@ -55,8 +60,8 @@ def prune_low_magnitude_neurons(weights, percentage):
     w = weights[0]
     # b = weights[1]
 
-    sums = np.sum(w, axis=w.ndim - 1)
+    sums = np.sum(w, axis=w.ndim - 2)
     indices = np.argsort(sums)
-    return indices[0:percentage * indices.size]
-    
-    
+    print(indices.shape)
+    print(indices[0: int(percentage * indices.size)].shape)
+    return indices[0: int(percentage * indices.size)]

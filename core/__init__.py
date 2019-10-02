@@ -3,3 +3,4 @@ from .generator import Generator
 from .squeezer import Squeezer
 from .model_splitter import ModelSplitter
 from .model_structure import *
+from .operation import *
