@@ -8,6 +8,8 @@ class Generation():
         self.base = base
         self.groups = []
         self.group_best = []
+        self.group_results = []
+        self.result = base
 
     def add_group(self, group):
         self.groups.append(group)
@@ -37,3 +39,14 @@ class Generation():
             weights.update(group[best].weights)
 
         return ModelStructure(order, layers, weights)
+
+    def eval_groups(self, dataset, expected, epsilon, **kwargs):
+        (x_train, y_train), (x_test, y_test) = dataset
+        for group in self.groups:
+            for structure in group:
+                model = structure.to_model()
+                model.compile(**kwargs)
+                hist = model.fit(x=x_train, y=y_train,
+                                 epochs=5, batch_size=128,
+                                 validation_data=(x_test, y_test), verbose=1)
+                print(hist.history['acc'][-1])

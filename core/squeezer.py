@@ -1,6 +1,9 @@
 import os
 from tensorflow.python.keras.models import Sequential
 from . import Generator
+from tensorflow.python.keras import losses
+from tensorflow.python.keras.datasets import mnist
+from tensorflow.python import keras
 
 
 class Squeezer():
@@ -9,7 +12,7 @@ class Squeezer():
         assert os.path.isdir(tmp_path)
         self.tmp_path = os.path.join(tmp_path, 'tmp')
 
-    def squeeze(self) -> Sequential:
+    def squeeze(self, dataset) -> Sequential:
         if not os.path.exists(self.tmp_path):
             os.mkdir(self.tmp_path)
         model_dir = self.model.name
@@ -25,5 +28,9 @@ class Squeezer():
         generator = Generator(self.model, model_path)
         generator.prepare()
 
-        best_model_structure = generator.get_model_structure(0, 0)
-        return best_model_structure.to_model()
+        gen = generator.build_next_gen()
+        gen.eval_groups(dataset, 1, 0, loss=losses.categorical_crossentropy,
+                        optimizer="SGD", metrics=["accuracy"])
+
+        # best_model_structure = generator.get_model_structure(0, 0)
+        return self.model  # best_model_structure.to_model()
