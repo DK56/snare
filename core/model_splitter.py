@@ -48,8 +48,8 @@ class ModelSplitter():
             if not os.path.exists(layer_dir):
                 os.mkdir(layer_dir)
 
-        w = FileWeights(os.path.join(layer_dir, weights_file))
-        w.save(layer.get_weights())
-        layer_weights[layer.name] = w
+            w = FileWeights(os.path.join(layer_dir, weights_file))
+            w.save(layer.get_weights())
+            layer_weights[layer.name] = w
 
         return layer_weights
