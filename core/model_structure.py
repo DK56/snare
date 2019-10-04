@@ -44,6 +44,97 @@ class ModelStructure():
         self.layers = layers
         self.weights = weights
 
+    @classmethod
+    def from_model(cls, model, path, suffix):
+        order = list(map(lambda layer: layer.name, model.layers))
+
+        assert os.path.exists(path)
+        assert os.path.isdir(path)
+
+        layer_configs = {}
+        if suffix:
+            config_file = 'config_' + suffix + '.json'
+        else:
+            config_file = 'config.json'
+
+        for layer in model.layers:
+            layer_dir = os.path.join(path, layer.name)
+            if not os.path.exists(layer_dir):
+                os.mkdir(layer_dir)
+
+            config_path = os.path.join(layer_dir, config_file)
+            assert not os.path.exists(config_path)
+
+            config = {'class_name': layer.__class__.__name__,
+                      'config': layer.get_config()}
+            config_json = json.dumps(config)
+
+            with open(config_path, 'w+') as f:
+                f.write(config_json)
+
+            layer_configs[layer.name] = config_path
+
+        assert os.path.exists(path)
+        assert os.path.isdir(path)
+
+        layer_weights = {}
+        if suffix:
+            weights_file = 'weights_' + suffix + '.npy'
+        else:
+            weights_file = 'weights.npy'
+
+        for layer in model.layers:
+            layer_dir = os.path.join(path, layer.name)
+            if not os.path.exists(layer_dir):
+                os.mkdir(layer_dir)
+
+            w = FileWeights(os.path.join(layer_dir, weights_file))
+            w.save(layer.get_weights())
+            layer_weights[layer.name] = w
+
+        return cls(order, layer_configs, layer_weights)
+
+    @staticmethod
+    def _save_configs(configs, path, suffix=None):
+        assert os.path.exists(path)
+        assert os.path.isdir(path)
+
+        if suffix:
+            config_file = 'config_' + suffix + '.json'
+        else:
+            config_file = 'config.json'
+
+        for layer_name, config in configs:
+            layer_dir = os.path.join(path, layer_name)
+            if not os.path.exists(layer_dir):
+                os.mkdir(layer_dir)
+
+            config_path = os.path.join(layer_dir, config_file)
+            assert not os.path.exists(config_path)
+
+            config_json = json.dumps(config)
+
+            with open(config_path, 'w+') as f:
+                f.write(config_json)
+
+    @staticmethod
+    def _save_weights(weights, path, suffix=None):
+        assert os.path.exists(path)
+        assert os.path.isdir(path)
+
+        if suffix:
+            weights_file = 'weights_' + suffix + '.npy'
+        else:
+            weights_file = 'weights.npy'
+
+        for layer_name, layer_weights in weights:
+            layer_dir = os.path.join(path, layer_name)
+            if not os.path.exists(layer_dir):
+                os.mkdir(layer_dir)
+
+            w = FileWeights(os.path.join(layer_dir, weights_file))
+            w.save(layer_weights.get())
+
     def to_model(self):
         model = Sequential()
         for layername in self.order:
@@ -60,5 +151,10 @@ class ModelStructure():
 
             model.add(layer)
             layer.set_weights(weights)
-            print(layer_config)
         return model
+
+    def save_configs(self, path, suffix=None):
+        self._save_configs(self.layers, path, suffix)
+
+    def save_weights(self, path, suffix=None):
+        self._save_weights(self.weights, path, suffix)
