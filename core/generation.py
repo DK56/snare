@@ -13,7 +13,6 @@ class Generation():
 
     def add_group(self, group):
         self.groups.append(group)
-        self.group_best.append(-1)
 
     def build_group_element(self, group_number, pos):
         order = self.base.order.copy()

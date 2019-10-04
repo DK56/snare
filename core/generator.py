@@ -29,8 +29,8 @@ class Generator():
         order = list(map(lambda layer: layer.name, self.model.layers))
         for layer in order:
             # TODO
-            self.layer_status[layer] = 0
-        self.layer_status['dense'] = 1.0
+            self.layer_status[layer] = 6
+        self.layer_status['dense'] = 0
         base = ModelStructure(order, layer_dict, weights_dict)
         self.gens.append(Generation(0, base))
         self.current_gen = 0
@@ -48,7 +48,7 @@ class Generator():
         gen = Generation(current_gen, base)
 
         for (i, layer) in enumerate(base.order):
-            if self.layer_status[layer] > 0:
+            if self.layer_status[layer] != 6:
                 layer_path = os.path.join(gen_path, layer)
                 assert not os.path.exists(layer_path)
                 os.mkdir(layer_path)
@@ -56,11 +56,10 @@ class Generator():
                 status = self.layer_status[layer]
                 group = []
                 weights = base.weights[layer].get()
-                if status > 0.6:
-                    percentages = [0.6, 0.3, 0.1, 0.02]
-                else:
-                    percentages = [0.3, 0.2, 0.05, 0.01]
+                percentages = [0.6, 0.3, 0.2, 0.1, 0.02, 0.01]
                 for k, p in enumerate(percentages):
+                    if status > k:
+                        continue
                     to_remove = prune_low_magnitude_neurons(weights, p)
                     next_layer = base.order[i + 1]
                     layer_dict = base.layers.copy()
@@ -94,9 +93,23 @@ class Generator():
 
         return gen
 
+    def train_gen(self, dataset, **kwargs):
+        gen = self.gens[self.current_gen]
+        gen_path = os.path.join(self.tmp_path, 'gen_' + str(self.current_gen))
+        gen.train_result(gen_path, dataset, **kwargs)
+        self.update_status()
+
+    def update_status(self):
+        gen = self.gens[self.current_gen]
+        index = gen.group_best[0]
+        if index == -1:
+            self.layer_status['dense'] = 6
+        else:
+            self.layer_status['dense'] += index
+
     def has_next(self):
-        for layer_status in self.layer_status.items():
-            if layer_status > 0:
+        for layer_status in self.layer_status.values():
+            if layer_status < 6:
                 return True
         return False
 
