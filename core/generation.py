@@ -39,13 +39,42 @@ class Generation():
 
         return ModelStructure(order, layers, weights)
 
+    def train_result(self, path, dataset, **kwargs):
+        (x_train, y_train), (x_test, y_test) = dataset
+        model = self.result.to_model()
+        model.compile(**kwargs)
+        hist = model.fit(x=x_train, y=y_train,
+                         epochs=10, batch_size=128,
+                         validation_data=(x_test, y_test), verbose=1)
+        print("Accuracy after result training: " +
+              str(hist.history['val_acc'][-1]))
+        self.result = ModelStructure.from_model(model, path, 'result_trained')
+        model.summary()
+
     def eval_groups(self, dataset, expected, epsilon, **kwargs):
+        assert len(self.group_best) == 0
         (x_train, y_train), (x_test, y_test) = dataset
         for group in self.groups:
-            for structure in group:
+            for i, structure in enumerate(group):
                 model = structure.to_model()
                 model.compile(**kwargs)
+                diff_dict = {key: val for (key, val) in structure.layers.items()
+                             if val != self.base.layers[key]}
                 hist = model.fit(x=x_train, y=y_train,
                                  epochs=5, batch_size=128,
                                  validation_data=(x_test, y_test), verbose=1)
-                print(hist.history['acc'][-1])
+
+                print("Accuracy: " + str(hist.history['val_acc'][-1]))
+                print("Expected: >" + str(expected - epsilon))
+                if hist.history['val_acc'][-1] > expected - epsilon:
+                    print("Found")
+                    diff_dict = {key: val for key, val in structure.layers.items()
+                                 if val != self.base.layers[key]}
+                    self.result.layers.update(diff_dict)
+                    diff_dict = {key: val for key, val in structure.weights.items()
+                                 if val != self.base.weights[key]}
+                    self.result.weights.update(diff_dict)
+                    self.group_best.append(i)
+
+                    break
+            self.group_best.append(-1)

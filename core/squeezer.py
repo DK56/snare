@@ -28,9 +28,15 @@ class Squeezer():
         generator = Generator(self.model, model_path)
         generator.prepare()
 
-        gen = generator.build_next_gen()
-        gen.eval_groups(dataset, 1, 0, loss=losses.categorical_crossentropy,
-                        optimizer="SGD", metrics=["accuracy"])
+        while(generator.has_next()):
+            gen = generator.build_next_gen()
+            gen.eval_groups(dataset, 0.99, 0.005, loss=losses.categorical_crossentropy,
+                            optimizer="SGD", metrics=["accuracy"])
+
+            generator.train_gen(dataset, loss=losses.categorical_crossentropy,
+                                optimizer="SGD", metrics=["accuracy"])
+
+        print(generator.has_next())
 
         # best_model_structure = generator.get_model_structure(0, 0)
-        return self.model  # best_model_structure.to_model()
+        return generator.gens[-2].result.to_model()  # best_model_structure.to_model()
