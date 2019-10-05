@@ -1,5 +1,5 @@
 from copy import deepcopy
-from .model_structure import ModelStructure
+from .model_wrapper import ModelWrapper
 
 
 class Generation():
@@ -23,7 +23,7 @@ class Generation():
         layer_configs.update(self.groups[group_number][pos].layer_configs)
         layer_weights.update(self.groups[group_number][pos].layer_weights)
 
-        return ModelStructure(order, layer_configs, weights)
+        return ModelWrapper(order, layer_configs, weights)
 
     def build_result(self):
         assert len(self.groups) == len(self.group_best)
@@ -38,7 +38,7 @@ class Generation():
             layer_configs.update(group[best].layer_configs)
             layer_weights.update(group[best].layer_weights)
 
-        return ModelStructure(order, layer_configs, layer_weights)
+        return ModelWrapper(order, layer_configs, layer_weights)
 
     def train_result(self, path, dataset, **kwargs):
         (x_train, y_train), (x_test, y_test) = dataset
@@ -49,17 +49,17 @@ class Generation():
                          validation_data=(x_test, y_test), verbose=1)
         print("Accuracy after result training: " +
               str(hist.history['val_acc'][-1]))
-        self.result = ModelStructure.from_model(model, path, 'result_trained')
+        self.result = ModelWrapper.from_model(model, path, 'result_trained')
         model.summary()
 
     def eval_groups(self, dataset, expected, epsilon, **kwargs):
         assert len(self.group_best) == 0
         (x_train, y_train), (x_test, y_test) = dataset
         for group in self.groups:
-            for i, structure in enumerate(group):
-                model = structure.to_model()
+            for i, wrapper in enumerate(group):
+                model = wrapper.to_model()
                 model.compile(**kwargs)
-                diff_dict = {key: val for (key, val) in structure.layer_configs.items()
+                diff_dict = {key: val for (key, val) in wrapper.layer_configs.items()
                              if val != self.base.layer_configs[key]}
                 hist = model.fit(x=x_train, y=y_train,
                                  epochs=5, batch_size=128,
@@ -69,10 +69,10 @@ class Generation():
                 print("Expected: >" + str(expected - epsilon))
                 if hist.history['val_acc'][-1] > expected - epsilon:
                     print("Found")
-                    diff_dict = {key: val for key, val in structure.layer_configs.items()
+                    diff_dict = {key: val for key, val in wrapper.layer_configs.items()
                                  if val != self.base.layer_configs[key]}
                     self.result.layer_configs.update(diff_dict)
-                    diff_dict = {key: val for key, val in structure.layer_weights.items()
+                    diff_dict = {key: val for key, val in wrapper.layer_weights.items()
                                  if val != self.base.layer_weights[key]}
                     self.result.layer_weights.update(diff_dict)
                     self.group_best.append(i)

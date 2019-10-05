@@ -35,7 +35,7 @@ class FileWeights(WeightsProvider):
 WeightsDict = Dict[str, WeightsProvider]
 
 
-class ModelStructure():
+class ModelWrapper():
 
     def __init__(self, order: List[str],
                  layer_configs, layer_weights: WeightsDict):

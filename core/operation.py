@@ -1,6 +1,6 @@
 import numpy as np
 import math
-from .model_structure import WeightsProvider
+from .model_wrapper import WeightsProvider
 
 
 class Operation(WeightsProvider):

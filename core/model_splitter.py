@@ -1,7 +1,7 @@
 import os
 import json
 import numpy as np
-from .model_structure import FileWeights
+from .model_wrapper import FileWeights
 from tensorflow.python.keras.models import Model
 
 

@@ -3,8 +3,7 @@ import json
 from copy import deepcopy
 from tensorflow.python.keras.models import Sequential
 from .generation import Generation
-from .model_splitter import ModelSplitter
-from .model_structure import ModelStructure
+from .model_wrapper import ModelWrapper
 from .operation import prune_low_magnitude_neurons, InputPruner, NeuronPruner
 
 
@@ -24,7 +23,7 @@ class Generator():
         # Build gen_0
         gen_path = os.path.join(self.tmp_path, 'gen_0')
         os.mkdir(gen_path)
-        base = ModelStructure.from_model(self.model, gen_path)
+        base = ModelWrapper.from_model(self.model, gen_path)
         for layer in base.order:
             # TODO
             self.layer_status[layer] = 6
@@ -72,7 +71,7 @@ class Generator():
                         to_remove, layer_weights[next_layer])
 
                     order = base.order
-                    group.append(ModelStructure(
+                    group.append(ModelWrapper(
                         order, layer_configs, layer_weights))
                 gen.add_group(group)
 
@@ -101,7 +100,7 @@ class Generator():
                 return True
         return False
 
-    def get_model_structure(self, gen, i):
+    def get_model_wrapper(self, gen, i):
         assert gen >= 0 and gen < len(self.gens)
         assert i >= 0 and i < len(self.gens[gen])
         return self.gens[gen][i]
