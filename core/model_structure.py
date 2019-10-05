@@ -32,47 +32,27 @@ class FileWeights(WeightsProvider):
         return weights
 
 
-PathDict = Dict[str, os.PathLike]
 WeightsDict = Dict[str, WeightsProvider]
 
 
 class ModelStructure():
 
     def __init__(self, order: List[str],
-                 layers: PathDict, weights: WeightsDict):
+                 layer_configs, layer_weights: WeightsDict):
         self.order = order
-        self.layers = layers
-        self.weights = weights
+        self.layer_configs = layer_configs
+        self.layer_weights = layer_weights
 
     @classmethod
-    def from_model(cls, model, path, suffix):
+    def from_model(cls, model, path, suffix=''):
         order = list(map(lambda layer: layer.name, model.layers))
 
-        assert os.path.exists(path)
-        assert os.path.isdir(path)
-
         layer_configs = {}
-        if suffix:
-            config_file = 'config_' + suffix + '.json'
-        else:
-            config_file = 'config.json'
 
         for layer in model.layers:
-            layer_dir = os.path.join(path, layer.name)
-            if not os.path.exists(layer_dir):
-                os.mkdir(layer_dir)
-
-            config_path = os.path.join(layer_dir, config_file)
-            assert not os.path.exists(config_path)
-
-            config = {'class_name': layer.__class__.__name__,
-                      'config': layer.get_config()}
-            config_json = json.dumps(config)
-
-            with open(config_path, 'w+') as f:
-                f.write(config_json)
-
-            layer_configs[layer.name] = config_path
+            layer_configs[layer.name] = {
+                'class_name': layer.__class__.__name__,
+                'config': layer.get_config()}
 
         assert os.path.exists(path)
         assert os.path.isdir(path)
@@ -138,23 +118,15 @@ class ModelStructure():
     def to_model(self):
         model = Sequential()
         for layername in self.order:
-
-            layer_config_path = self.layers[layername]
-            assert os.path.exists(layer_config_path)
-            assert os.path.isfile(layer_config_path)
-            with open(layer_config_path) as file:
-                layer_config = json.load(file)
-            assert layer_config
-
-            weights = self.weights[layername].get()
-            layer = layers.deserialize(layer_config)
+            weights = self.layer_weights[layername].get()
+            layer = layers.deserialize(self.layer_configs[layername])
 
             model.add(layer)
             layer.set_weights(weights)
         return model
 
     def save_configs(self, path, suffix=None):
-        self._save_configs(self.layers, path, suffix)
+        self._save_configs(self.layer_configs, path, suffix)
 
     def save_weights(self, path, suffix=None):
-        self._save_weights(self.weights, path, suffix)
+        self._save_weights(self.layer_weights, path, suffix)

@@ -1,5 +1,6 @@
 import os
 import json
+from copy import deepcopy
 from tensorflow.python.keras.models import Sequential
 from .generation import Generation
 from .model_splitter import ModelSplitter
@@ -23,15 +24,11 @@ class Generator():
         # Build gen_0
         gen_path = os.path.join(self.tmp_path, 'gen_0')
         os.mkdir(gen_path)
-        splitter = ModelSplitter(self.model)
-        layer_dict = splitter.split_layers_to_dir(gen_path)
-        weights_dict = splitter.split_weights_to_dir(gen_path)
-        order = list(map(lambda layer: layer.name, self.model.layers))
-        for layer in order:
+        base = ModelStructure.from_model(self.model, gen_path)
+        for layer in base.order:
             # TODO
             self.layer_status[layer] = 6
         self.layer_status['dense'] = 0
-        base = ModelStructure(order, layer_dict, weights_dict)
         self.gens.append(Generation(0, base))
         self.current_gen = 0
 
@@ -55,37 +52,28 @@ class Generator():
 
                 status = self.layer_status[layer]
                 group = []
-                weights = base.weights[layer].get()
+                weights = base.layer_weights[layer].get()
                 percentages = [0.6, 0.3, 0.2, 0.1, 0.02, 0.01]
                 for k, p in enumerate(percentages):
                     if status > k:
                         continue
                     to_remove = prune_low_magnitude_neurons(weights, p)
                     next_layer = base.order[i + 1]
-                    layer_dict = base.layers.copy()
-                    weights_dict = base.weights.copy()
-                    op = NeuronPruner(to_remove, weights_dict[layer])
-                    with open(layer_dict[layer]) as file:
-                        config = json.load(file)
+                    layer_configs = deepcopy(base.layer_configs)
+                    layer_weights = base.layer_weights.copy()
 
-                    config = op.update_config(config)
-                    weights_dict[layer] = op
+                    op = NeuronPruner(to_remove, layer_weights[layer])
+                    layer_weights[layer] = op
 
-                    config_json = json.dumps(config)
-                    config_path = os.path.join(
-                        layer_path, "config_" + str(k) + ".json")
+                    config = op.update_config(layer_configs[layer])
+                    layer_configs[layer] = config
 
-                    with open(config_path, 'w+') as f:
-                        f.write(config_json)
-
-                    layer_dict[layer] = config_path
-
-                    weights_dict[next_layer] = InputPruner(
-                        to_remove, weights_dict[next_layer])
+                    layer_weights[next_layer] = InputPruner(
+                        to_remove, layer_weights[next_layer])
 
                     order = base.order
                     group.append(ModelStructure(
-                        order, layer_dict, weights_dict))
+                        order, layer_configs, layer_weights))
                 gen.add_group(group)
 
         self.current_gen = current_gen

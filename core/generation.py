@@ -1,3 +1,4 @@
+from copy import deepcopy
 from .model_structure import ModelStructure
 
 
@@ -16,28 +17,28 @@ class Generation():
 
     def build_group_element(self, group_number, pos):
         order = self.base.order.copy()
-        layers = self.base.layers.copy()
-        weights = self.base.weights.copy()
+        layer_configs = deepcopy(self.base.layer_configs)
+        layer_weights = self.base.layer_weights.copy()
 
-        layers.update(self.groups[group_number][pos].layers)
-        weights.update(self.groups[group_number][pos].weights)
+        layer_configs.update(self.groups[group_number][pos].layer_configs)
+        layer_weights.update(self.groups[group_number][pos].layer_weights)
 
-        return ModelStructure(order, layers, weights)
+        return ModelStructure(order, layer_configs, weights)
 
     def build_result(self):
         assert len(self.groups) == len(self.group_best)
         order = self.base.order.copy()
-        layers = self.base.layers.copy()
-        weights = self.base.weights.copy()
+        layer_configs = self.base.layer_configs.copy()
+        layer_weights = self.base.layer_weights.copy()
 
         for i, group in enumerate(self.groups):
             best = self.group_best[i]
             assert best >= 0 and best < len(group)
 
-            layers.update(group[best].layers)
-            weights.update(group[best].weights)
+            layer_configs.update(group[best].layer_configs)
+            layer_weights.update(group[best].layer_weights)
 
-        return ModelStructure(order, layers, weights)
+        return ModelStructure(order, layer_configs, layer_weights)
 
     def train_result(self, path, dataset, **kwargs):
         (x_train, y_train), (x_test, y_test) = dataset
@@ -58,8 +59,8 @@ class Generation():
             for i, structure in enumerate(group):
                 model = structure.to_model()
                 model.compile(**kwargs)
-                diff_dict = {key: val for (key, val) in structure.layers.items()
-                             if val != self.base.layers[key]}
+                diff_dict = {key: val for (key, val) in structure.layer_configs.items()
+                             if val != self.base.layer_configs[key]}
                 hist = model.fit(x=x_train, y=y_train,
                                  epochs=5, batch_size=128,
                                  validation_data=(x_test, y_test), verbose=1)
@@ -68,12 +69,12 @@ class Generation():
                 print("Expected: >" + str(expected - epsilon))
                 if hist.history['val_acc'][-1] > expected - epsilon:
                     print("Found")
-                    diff_dict = {key: val for key, val in structure.layers.items()
-                                 if val != self.base.layers[key]}
-                    self.result.layers.update(diff_dict)
-                    diff_dict = {key: val for key, val in structure.weights.items()
-                                 if val != self.base.weights[key]}
-                    self.result.weights.update(diff_dict)
+                    diff_dict = {key: val for key, val in structure.layer_configs.items()
+                                 if val != self.base.layer_configs[key]}
+                    self.result.layer_configs.update(diff_dict)
+                    diff_dict = {key: val for key, val in structure.layer_weights.items()
+                                 if val != self.base.layer_weights[key]}
+                    self.result.layer_weights.update(diff_dict)
                     self.group_best.append(i)
 
                     break

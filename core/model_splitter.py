@@ -1,7 +1,7 @@
 import os
 import json
 import numpy as np
-from .model_structure import PathDict, WeightsDict, FileWeights
+from .model_structure import FileWeights
 from tensorflow.python.keras.models import Model
 
 
@@ -10,7 +10,7 @@ class ModelSplitter():
     def __init__(self, model: Model):
         self.model = model
 
-    def split_layers_to_dir(self, path) -> PathDict:
+    def split_layers_to_dir(self, path):
         assert os.path.exists(path)
         assert os.path.isdir(path)
 
@@ -36,7 +36,7 @@ class ModelSplitter():
 
         return layer_configs
 
-    def split_weights_to_dir(self, path) -> WeightsDict:
+    def split_weights_to_dir(self, path):
         assert os.path.exists(path)
         assert os.path.isdir(path)
 
