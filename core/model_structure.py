@@ -40,6 +40,7 @@ class ModelStructure():
     def __init__(self, order: List[str],
                  layer_configs, layer_weights: WeightsDict):
         self.order = order
+        self.layer_output_shapes = None
         self.layer_configs = layer_configs
         self.layer_weights = layer_weights
 
@@ -72,7 +73,9 @@ class ModelStructure():
             w.save(layer.get_weights())
             layer_weights[layer.name] = w
 
-        return cls(order, layer_configs, layer_weights)
+        wrapper = cls(order, layer_configs, layer_weights)
+        wrapper.set_output_shapes(model)
+        return wrapper
 
     @staticmethod
     def _save_configs(configs, path, suffix=None):
@@ -114,6 +117,11 @@ class ModelStructure():
 
             w = FileWeights(os.path.join(layer_dir, weights_file))
             w.save(layer_weights.get())
+
+    def set_output_shapes(self, model):
+        self.layer_output_shapes = {}
+        for layer in model.layers:
+            self.layer_output_shapes[layer.name] = layer.output_shape
 
     def to_model(self):
         model = Sequential()
