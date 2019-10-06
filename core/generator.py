@@ -3,6 +3,7 @@ import json
 from copy import deepcopy
 from tensorflow.python.keras.models import Sequential
 from .generation import Generation
+from .group import Group
 from .model_wrapper import ModelWrapper
 from .operation import prune_low_magnitude_neurons, InputPruner, NeuronPruner
 
@@ -48,6 +49,10 @@ class Generator():
                 layer_path = os.path.join(gen_path, layer)
                 assert not os.path.exists(layer_path)
                 os.mkdir(layer_path)
+
+                groups = Group.create_groups(base, 2, 1)
+                for group in groups:
+                    print(group.order)
 
                 status = self.layer_status[layer]
                 group = []
