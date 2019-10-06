@@ -77,6 +77,28 @@ class ModelWrapper():
         wrapper.set_output_shapes(model)
         return wrapper
 
+    @classmethod
+    def from_model_wrapper(cls, wrapper, start, end):
+
+        order = []
+        layer_configs = {}
+        layer_weights = {}
+        layer_output_shapes = {}
+
+        for i in range(start, end):
+            layer_name = wrapper.order[i]
+            order.append(layer_name)
+            layer_configs[layer_name] = wrapper.layer_configs[layer_name]
+            layer_weights[layer_name] = wrapper.layer_weights[layer_name]
+            if wrapper.layer_output_shapes:
+                layer_output_shapes[layer_name] = \
+                    wrapper.layer_output_shapes[layer_name]
+
+        sub_wrapper = cls(order, layer_configs, layer_weights)
+        if wrapper.layer_output_shapes:
+            sub_wrapper.layer_output_shapes = layer_output_shapes
+        return sub_wrapper
+
     @staticmethod
     def _save_configs(configs, path, suffix=None):
         assert os.path.exists(path)
