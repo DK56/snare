@@ -4,7 +4,8 @@ from .model_wrapper import ModelWrapper
 
 class Generation():
 
-    def __init__(self, number, base):
+    def __init__(self, number, base, path):
+        self.path = path
         self.number = number
         self.base = base
         self.groups = []
@@ -40,7 +41,7 @@ class Generation():
 
         return ModelWrapper(order, layer_configs, layer_weights)
 
-    def train_result(self, path, dataset, **kwargs):
+    def train_result(self, dataset, **kwargs):
         (x_train, y_train), (x_test, y_test) = dataset
         model = self.result.to_model()
         model.compile(**kwargs)
@@ -49,33 +50,42 @@ class Generation():
                          validation_data=(x_test, y_test), verbose=1)
         print("Accuracy after result training: " +
               str(hist.history['val_acc'][-1]))
-        self.result = ModelWrapper.from_model(model, path, 'result_trained')
+        self.result = ModelWrapper.from_model(
+            model, self.path, 'result_trained')
         model.summary()
 
     def eval_groups(self, dataset, expected, epsilon, **kwargs):
         assert len(self.group_best) == 0
         (x_train, y_train), (x_test, y_test) = dataset
+
+        base = self.base
+
         for group in self.groups:
-            for i, wrapper in enumerate(group):
-                model = wrapper.to_model()
-                model.compile(**kwargs)
-                diff_dict = {key: val for (key, val) in wrapper.layer_configs.items()
-                             if val != self.base.layer_configs[key]}
-                hist = model.fit(x=x_train, y=y_train,
-                                 epochs=5, batch_size=128,
-                                 validation_data=(x_test, y_test), verbose=1)
 
-                print("Accuracy: " + str(hist.history['val_acc'][-1]))
-                print("Expected: >" + str(expected - epsilon))
-                if hist.history['val_acc'][-1] > expected - epsilon:
-                    print("Found")
-                    diff_dict = {key: val for key, val in wrapper.layer_configs.items()
-                                 if val != self.base.layer_configs[key]}
-                    self.result.layer_configs.update(diff_dict)
-                    diff_dict = {key: val for key, val in wrapper.layer_weights.items()
-                                 if val != self.base.layer_weights[key]}
-                    self.result.layer_weights.update(diff_dict)
-                    self.group_best.append(i)
+            print()
+            print("------------------------------------------------")
+            print("Process group with layer='" + group.main_layer + "'")
+            print("------------------------------------------------")
+            print()
+            group.base_wrapper = base
 
-                    break
-            self.group_best.append(-1)
+            group.eval_full(dataset, expected, epsilon, self.path, **kwargs)
+
+            model = group.result.to_model()
+            model.compile(**kwargs)
+
+            print("Retrain another 5 epochs")
+
+            model.fit(x=x_train, y=y_train,
+                      epochs=5, batch_size=128,
+                      validation_data=(x_test, y_test), verbose=1)
+
+            base = ModelWrapper.from_model(model, self.path, "result")
+
+            print()
+            print("------------------------------------------------")
+            print("Finished group with layer='" + group.main_layer + "'")
+            print("------------------------------------------------")
+            print()
+
+            self.result = base
