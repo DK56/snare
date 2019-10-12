@@ -160,3 +160,17 @@ class ModelWrapper():
 
     def save_weights(self, path, suffix=None):
         self._save_weights(self.layer_weights, path, suffix)
+
+    def update(self, to_update):
+        self.layer_configs.update(to_update.layer_configs)
+        self.layer_weights.update(to_update.layer_weights)
+
+    def copy(self):
+        return self.__copy__()
+
+    def __copy__(self):
+        copy = type(self)(self.order.copy(),
+                          self.layer_configs.copy(), self.layer_weights.copy())
+        if self.layer_output_shapes:
+            copy.layer_output_shapes = self.layer_output_shapes.copy()
+        return copy
