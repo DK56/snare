@@ -19,7 +19,8 @@ class Squeezer():
         if os.path.exists(os.path.join(self.tmp_path, model_dir)):
             model_dir = model_dir + '_'
             i = 1
-            while os.path.exists(os.path.join(self.tmp_path, model_dir + str(i))):
+            while os.path.exists(
+                    os.path.join(self.tmp_path, model_dir + str(i))):
                 i += 1
             model_dir = model_dir + str(i)
         model_path = os.path.join(self.tmp_path, model_dir)
@@ -29,14 +30,35 @@ class Squeezer():
         generator.prepare()
 
         while(generator.has_next()):
+            print()
+            print()
+            print("------------------------------------------------")
+            print("Start generation")
+            print("------------------------------------------------")
+            print()
+            print()
             gen = generator.build_next_gen()
-            gen.eval_groups(dataset, 0.99, 0.005, loss=losses.categorical_crossentropy,
+            gen.eval_groups(dataset, 0.99, 0.005,
+                            loss=losses.categorical_crossentropy,
                             optimizer="SGD", metrics=["accuracy"])
 
-            generator.train_gen(dataset, loss=losses.categorical_crossentropy,
-                                optimizer="SGD", metrics=["accuracy"])
+            # gen.train_result(dataset,
+            #                  loss=losses.categorical_crossentropy,
+            #                  optimizer="SGD", metrics=["accuracy"])
 
-        print(generator.has_next())
+            generator.update_status()
+
+            if generator.has_next():
+                generator.gens[-1].result.to_model().summary()
+
+            print()
+            print()
+            print("------------------------------------------------")
+            print("End generation")
+            print("------------------------------------------------")
+            print()
+            print()
 
         # best_model_structure = generator.get_model_structure(0, 0)
-        return generator.gens[-2].result.to_model()  # best_model_structure.to_model()
+        # best_model_structure.to_model()
+        return generator.gens[-2].result.to_model()
