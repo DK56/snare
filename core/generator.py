@@ -29,7 +29,11 @@ class Generator():
         for layer in base.order:
             # TODO
             self.layer_status[layer] = 6
+        self.layer_status['conv2d'] = 0
+        self.layer_status['conv2d_1'] = 0
+        self.layer_status['conv2d_2'] = 0
         self.layer_status['dense'] = 0
+        # self.layer_status['dense_1'] = 0
         self.gens.append(Generation(0, base, gen_path))
         self.current_gen = 0
 
@@ -45,7 +49,11 @@ class Generator():
         base = self.gens[current_gen - 1].result
         gen = Generation(current_gen, base, gen_path)
 
-        groups = Group.create_groups(base, 2, 1)
+        groups = Group.create_groups(base, 2, 0)
+        if current_gen % 2:
+            groups = Group.create_groups(base, 2, 0)
+        else:
+            groups = Group.create_groups(base, 2, 1)
 
         print()
         print("------------------------------------------------")

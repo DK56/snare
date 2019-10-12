@@ -80,7 +80,8 @@ class Generation():
                       epochs=5, batch_size=128,
                       validation_data=(x_test, y_test), verbose=1)
 
-            base = ModelWrapper.from_model(model, self.path, "result")
+            base = ModelWrapper.from_model(model, self.path,
+                                           "result" + str(group.id))
 
             print()
             print("------------------------------------------------")
