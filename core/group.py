@@ -71,42 +71,37 @@ class Group():
         self.out_data = model.predict(to_infer)
         return self.out_data
 
-    # def eval(self, dataset, train, expected, epsilon, **kwargs):
-    #     (x_train, y_train), (x_test, y_test) = dataset
-    #     for i, wrapper in enumerate(self.instances):
-    #         model = wrapper.to_model()
-    #         model.compile(**kwargs)
-    #         diff_dict = {
-    #             key: val for (key, val) in wrapper.layer_configs.items()
-    #             if val != self.base.layer_configs[key]}
+    def eval(self, dataset, expected, epsilon, path, **kwargs):
+        (x_train, y_train), (x_test, y_test) = dataset
+        print("Evaluate group", self.id)
+        print("Main layer =", self.main_layer)
+        for i, instance in enumerate(self.instances):
 
-    #         hist = model.fit(x=x_train, y=y_train,
-    #                          epochs=5, batch_size=128,
-    #                          validation_data=(x_test, y_test), verbose=1)
+            model = instance.to_model()
+            model.compile(loss=losses.mse, optimizer="SGD",
+                          metrics=["accuracy"])
 
-    #         print("Accuracy: " + str(hist.history['val_acc'][-1]))
-    #         print("Expected: >" + str(expected - epsilon))
-    #         if hist.history['val_acc'][-1] > expected - epsilon:
-    #             print("Found")
-    #             diff_dict = {key: val for key, val in wrapper.layer_configs.items()
-    #                          if val != self.base.layer_configs[key]}
-    #             self.result.layer_configs.update(diff_dict)
-    #             diff_dict = {key: val for key, val in wrapper.layer_weights.items()
-    #                          if val != self.base.layer_weights[key]}
-    #             self.result.layer_weights.update(diff_dict)
-    #             self.group_best.append(i)
+            # diff_dict = {
+            #    key: val for (key, val) in tmp.layer_configs.items()
+            #    if val != self.base.layer_configs[key]}
 
-    #             break
-    #     self.group_best.append(-1)
+            hist = model.fit(x=self.in_data, y=self.out_data,
+                             epochs=5, batch_size=128, verbose=1)
 
-    # def infer_base(self, to_infer):
-    #     self.in_data = to_infer
-    #     self.base_wrapper.input_shape = to_infer.shape[1:]
-    #     model = self.base_wrapper.to_model()
-    #     model.compile(loss=losses.mse, optimizer="SGD", metrics=["accuracy"])
-    #     self.out_data = model.predict(to_infer)
-    #     self.loss = losses.mse
-    #     return self.out_data
+            print("Accuracy: " + str(hist.history['acc'][-1]))
+            print("Expected: >" + str(0.99))
+            if hist.history['acc'][-1] > 0.90:
+                print("Found")
+                self.result = ModelWrapper.from_model(
+                    model, path, "group_" + str(self.id) + "_" + str(i))
+
+                self.best_index = i
+                return True
+
+        print("Finished group", self.id, "no improvement")
+        self.result = self.base_wrapper
+        self.best_index = -1
+        return False
 
     def eval_full(self, dataset, expected, epsilon, path, **kwargs):
         (x_train, y_train), (x_test, y_test) = dataset
