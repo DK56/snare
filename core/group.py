@@ -2,11 +2,12 @@ import numpy as np
 from abc import ABC, abstractmethod
 from tensorflow.python.keras.models import Sequential
 from tensorflow.python.keras import layers
+from tensorflow.python.keras import losses
 from .model_wrapper import ModelWrapper
 
 
 class Group():
-    IMPORTANT_LAYERS = ['Conv2D', 'Dense']
+    IMPORTANT_LAYERS = ['Conv1D', 'Conv2D', 'Dense']
 
     def __init__(self, group_index, main_layer, full_wrapper, base_wrapper):
         self.main_layer = main_layer
@@ -28,7 +29,7 @@ class Group():
         for i, layer_name in enumerate(wrapper.order):
             layer_config = wrapper.layer_configs[layer_name]
 
-            if layer_config['class_name'] in ['Conv2D', 'Dense']:
+            if layer_config['class_name'] in Group.IMPORTANT_LAYERS:
                 processable_layers.append(i)
 
         start = 0
