@@ -69,7 +69,7 @@ class LayerWrapper():
         w.save(layer.get_weights())
 
         return cls(name, classname, layer.get_config(),
-                   layer.input_shape, layer.output_shape, w)
+                   layer.input_shape[1:], layer.output_shape[1:], w)
 
     def is_important(self):
         return self.classname in LayerWrapper.IMPORTANT_LAYERS
@@ -82,6 +82,7 @@ class LayerWrapper():
     def apply_operation(self, op):
         self.weights = op
         self.config = op.update_config(self.config)
+        # TODO update input/output_shape
 
     def copy(self):
         return self.__copy__()
@@ -181,9 +182,8 @@ class ModelWrapper():
     def to_model(self):
         model = Sequential()
 
-        # if 'batch_input_shape' not in self.layer_configs[self.order[0]]:
-        #     print(self.input_shape)
-        #     model.add(layers.Input(shape=self.input_shape))
+        if 'batch_input_shape' not in self.layers[0].config:
+            model.add(layers.Input(shape=self.layers[0].input_shape))
 
         for l_wrapper in self.layers:
             layer = l_wrapper.to_layer()
