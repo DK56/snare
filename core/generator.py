@@ -3,6 +3,7 @@ import json
 import sys
 from copy import deepcopy
 from tensorflow.python.keras.models import Sequential
+from tensorflow.python.keras import backend as K
 from .generation import Generation
 from .group import Group
 from .model_wrapper import ModelWrapper
@@ -38,6 +39,7 @@ class Generator():
         self.current_gen = 0
 
     def build_next_gen(self):
+        K.clear_session()
         assert self.current_gen >= 0
         assert os.path.isdir(self.tmp_path)
         current_gen = self.current_gen + 1
