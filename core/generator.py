@@ -65,6 +65,8 @@ class Generator():
         print()
 
         for group in groups:
+            gen.add_group(group)
+
             status = self.layer_status[group.main_layer]
             if status == 6:
                 continue
@@ -72,8 +74,6 @@ class Generator():
             percentages = [0.6, 0.3, 0.2, 0.1, 0.02, 0.01]
             percentages = [p for i, p in enumerate(percentages) if i >= status]
             prune_low_magnitude_neurons(group, percentages)
-
-            gen.add_group(group)
 
         print()
         print("------------------------------------------------")

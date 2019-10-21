@@ -64,6 +64,13 @@ class Group():
 
         return groups
 
+    def infer_base(self, to_infer):
+        self.in_data = to_infer
+        model = self.base_wrapper.to_model()
+        model.compile(loss=losses.mse, optimizer="SGD", metrics=["accuracy"])
+        self.out_data = model.predict(to_infer)
+        return self.out_data
+
     # def eval(self, dataset, train, expected, epsilon, **kwargs):
     #     (x_train, y_train), (x_test, y_test) = dataset
     #     for i, wrapper in enumerate(self.instances):
