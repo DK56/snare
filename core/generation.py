@@ -60,14 +60,14 @@ class Generation():
 
         base = self.base
 
-        for group in self.groups:
+        for group in reversed(self.groups):
 
             print()
             print("------------------------------------------------")
             print("Process group with layer='" + group.main_layer + "'")
             print("------------------------------------------------")
             print()
-            group.base_wrapper = base
+            group.full_wrapper = base
 
             group.eval_full(dataset, expected, epsilon, self.path, **kwargs)
 
@@ -82,11 +82,10 @@ class Generation():
 
             base = ModelWrapper.from_model(model, self.path,
                                            "result" + str(group.id))
+            self.result = base
 
             print()
             print("------------------------------------------------")
             print("Finished group with layer='" + group.main_layer + "'")
             print("------------------------------------------------")
             print()
-
-            self.result = base
