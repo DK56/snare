@@ -12,7 +12,7 @@ class Squeezer():
         assert os.path.isdir(tmp_path)
         self.tmp_path = os.path.join(tmp_path, 'tmp')
 
-    def squeeze(self, dataset) -> Sequential:
+    def squeeze(self, dataset, acc, threshold) -> Sequential:
         if not os.path.exists(self.tmp_path):
             os.mkdir(self.tmp_path)
         model_dir = self.model.name
@@ -38,7 +38,7 @@ class Squeezer():
             print()
             print()
             gen = generator.build_next_gen()
-            gen.eval_groups(dataset, 0.99, 0.005,
+            gen.eval_groups(dataset, acc, threshold,
                             loss=losses.categorical_crossentropy,
                             optimizer="SGD", metrics=["accuracy"])
 
