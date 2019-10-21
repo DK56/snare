@@ -39,11 +39,11 @@ class NeuronPruner(Operation):
 
     def update_config(self, config):
         updated = copy.deepcopy(config)
-        if 'units' in updated['config']:
-            updated['config']['units'] = updated['config']['units'] - \
+        if 'units' in updated:
+            updated['units'] = updated['units'] - \
                 len(self.to_remove)
-        if 'filters' in config['config']:
-            updated['config']['filters'] = updated['config']['filters'] - \
+        if 'filters' in config:
+            updated['filters'] = updated['filters'] - \
                 len(self.to_remove)
         return updated
 
@@ -74,8 +74,9 @@ def prune_low_magnitude_neurons(group, percentages):
     main_layer = group.main_layer
 
     instances = []
+    main_index = base.layers.index(main_layer)
+    weights = main_layer.weights.get()
 
-    weights = base.layer_weights[main_layer].get()
     w = weights[0]
     # b = weights[1]
     sums = w
@@ -88,22 +89,17 @@ def prune_low_magnitude_neurons(group, percentages):
               len(indices[0: math.ceil(p * indices.size)]), "neurons")
         instance = base.copy()
 
-        op = NeuronPruner(to_remove, instance.layer_weights[main_layer])
-        instance.layer_weights[main_layer] = op
+        main_layer = instance.layers[main_index]
+        main_layer.apply_operation(
+            NeuronPruner(to_remove, main_layer.weights))
 
-        config = op.update_config(instance.layer_configs[main_layer])
-        instance.layer_configs[main_layer] = config
-
-        next_index = instance.order.index(main_layer) + 1
-        next_config = instance.layer_configs[instance.order[next_index]]
-        while next_config["class_name"] not in Group.IMPORTANT_LAYERS:
+        next_index = main_index + 1
+        while not instance.layers[next_index].is_important():
             next_index += 1
-            next_config = instance.layer_configs[instance.order[next_index]]
 
-        next_layer = instance.order[next_index]
-
-        instance.layer_weights[next_layer] = InputPruner(
-            to_remove, indices.size, instance.layer_weights[next_layer])
+        next_layer = instance.layers[next_index]
+        next_layer.apply_operation(InputPruner(
+            to_remove, indices.size, next_layer.weights))
 
         instances.append(instance)
 

@@ -27,14 +27,15 @@ class Generator():
         gen_path = os.path.join(self.tmp_path, 'gen_0')
         os.mkdir(gen_path)
         base = ModelWrapper.from_model(self.model, gen_path)
-        for layer in base.order:
-            # TODO
+
+        # TODO
+        for layer in base.layers:
             self.layer_status[layer] = 6
-        self.layer_status['conv2d'] = 0
-        self.layer_status['conv2d_1'] = 0
-        self.layer_status['conv2d_2'] = 0
-        self.layer_status['dense'] = 0
-        # self.layer_status['dense_1'] = 0
+        for layer in base.layers:
+            if layer.name in ['conv1d_1', 'conv1d_2', 'conv1d_3', 'conv1d_4',
+                              'dense', 'dense_1']:
+                self.layer_status[layer] = 0
+
         self.gens.append(Generation(0, base, gen_path))
         self.current_gen = 0
 

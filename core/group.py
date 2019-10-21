@@ -7,7 +7,6 @@ from .model_wrapper import ModelWrapper
 
 
 class Group():
-    IMPORTANT_LAYERS = ['Conv1D', 'Conv2D', 'Dense']
 
     def __init__(self, group_index, main_layer, full_wrapper, base_wrapper):
         self.main_layer = main_layer
@@ -20,16 +19,14 @@ class Group():
     @classmethod
     def create_groups(cls, model_wrapper, min_group_size, offset=0):
         assert min_group_size > 0
-        # TODO Needs to be an deepcopy
-        wrapper = model_wrapper
+
+        wrapper = model_wrapper.copy()
 
         groups = []
 
         processable_layers = []
-        for i, layer_name in enumerate(wrapper.order):
-            layer_config = wrapper.layer_configs[layer_name]
-
-            if layer_config['class_name'] in Group.IMPORTANT_LAYERS:
+        for i, layer in enumerate(wrapper.layers):
+            if layer.is_important():
                 processable_layers.append(i)
 
         start = 0
@@ -37,7 +34,7 @@ class Group():
         current_group_size = 0
         group_number = 0
 
-        max_end = len(wrapper.order)
+        max_end = len(wrapper.layers)
         print(processable_layers)
 
         for i, index in enumerate(processable_layers):
@@ -46,7 +43,7 @@ class Group():
 
             current_group_size += 1
             if current_group_size == 1:
-                main_layer = wrapper.order[index]
+                main_layer = wrapper.layers[index]
 
             if current_group_size == min_group_size:
                 if i + min_group_size >= len(processable_layers):
@@ -54,8 +51,9 @@ class Group():
                 else:
                     end = processable_layers[i + 1]
 
-                group = cls(group_number, main_layer, wrapper, ModelWrapper.from_model_wrapper(
-                    wrapper, start, end))
+                group = cls(group_number, main_layer, wrapper,
+                            ModelWrapper.from_model_wrapper(wrapper,
+                                                            start, end))
                 group_number += 1
                 groups.append(group)
 
@@ -66,33 +64,42 @@ class Group():
 
         return groups
 
-    def eval(self, dataset, train, expected, epsilon, **kwargs):
-        (x_train, y_train), (x_test, y_test) = dataset
-        for i, wrapper in enumerate(self.instances):
-            model = wrapper.to_model()
-            model.compile(**kwargs)
-            diff_dict = {
-                key: val for (key, val) in wrapper.layer_configs.items()
-                if val != self.base.layer_configs[key]}
+    # def eval(self, dataset, train, expected, epsilon, **kwargs):
+    #     (x_train, y_train), (x_test, y_test) = dataset
+    #     for i, wrapper in enumerate(self.instances):
+    #         model = wrapper.to_model()
+    #         model.compile(**kwargs)
+    #         diff_dict = {
+    #             key: val for (key, val) in wrapper.layer_configs.items()
+    #             if val != self.base.layer_configs[key]}
 
-            hist = model.fit(x=x_train, y=y_train,
-                             epochs=5, batch_size=128,
-                             validation_data=(x_test, y_test), verbose=1)
+    #         hist = model.fit(x=x_train, y=y_train,
+    #                          epochs=5, batch_size=128,
+    #                          validation_data=(x_test, y_test), verbose=1)
 
-            print("Accuracy: " + str(hist.history['val_acc'][-1]))
-            print("Expected: >" + str(expected - epsilon))
-            if hist.history['val_acc'][-1] > expected - epsilon:
-                print("Found")
-                diff_dict = {key: val for key, val in wrapper.layer_configs.items()
-                             if val != self.base.layer_configs[key]}
-                self.result.layer_configs.update(diff_dict)
-                diff_dict = {key: val for key, val in wrapper.layer_weights.items()
-                             if val != self.base.layer_weights[key]}
-                self.result.layer_weights.update(diff_dict)
-                self.group_best.append(i)
+    #         print("Accuracy: " + str(hist.history['val_acc'][-1]))
+    #         print("Expected: >" + str(expected - epsilon))
+    #         if hist.history['val_acc'][-1] > expected - epsilon:
+    #             print("Found")
+    #             diff_dict = {key: val for key, val in wrapper.layer_configs.items()
+    #                          if val != self.base.layer_configs[key]}
+    #             self.result.layer_configs.update(diff_dict)
+    #             diff_dict = {key: val for key, val in wrapper.layer_weights.items()
+    #                          if val != self.base.layer_weights[key]}
+    #             self.result.layer_weights.update(diff_dict)
+    #             self.group_best.append(i)
 
-                break
-        self.group_best.append(-1)
+    #             break
+    #     self.group_best.append(-1)
+
+    # def infer_base(self, to_infer):
+    #     self.in_data = to_infer
+    #     self.base_wrapper.input_shape = to_infer.shape[1:]
+    #     model = self.base_wrapper.to_model()
+    #     model.compile(loss=losses.mse, optimizer="SGD", metrics=["accuracy"])
+    #     self.out_data = model.predict(to_infer)
+    #     self.loss = losses.mse
+    #     return self.out_data
 
     def eval_full(self, dataset, expected, epsilon, path, **kwargs):
         (x_train, y_train), (x_test, y_test) = dataset
