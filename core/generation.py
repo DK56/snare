@@ -58,42 +58,51 @@ class Generation():
         assert len(self.group_best) == 0
         (x_train, y_train), (x_test, y_test) = dataset
 
-        base = self.base
+        current_in = x_train
+        for group in self.groups:
+            current_in = group.infer_base(current_in)
+
+        result = self.base
 
         for group in reversed(self.groups):
+            if not group.instances:
+                continue
 
             print()
             print("------------------------------------------------")
             print("Process group with layer='", group.main_layer, "'", sep="")
             print("------------------------------------------------")
             print()
-            group.full_wrapper = base
 
-            group.eval_full(dataset, expected, epsilon, self.path, **kwargs)
+            found = group.eval(
+                dataset, expected, epsilon, self.path, **kwargs)
 
-            model = group.result.to_model()
-            model.compile(**kwargs)
-
-            print("Retrain another 5 epochs")
-
-            model.fit(x=x_train, y=y_train,
-                      epochs=5, batch_size=128,
-                      validation_data=(x_test, y_test), verbose=1)
-
-            # if hist.history['val_acc'][-1] > expected - 0.5 * epsilon:
-            #     base = ModelWrapper.from_model(model, self.path,
-            #                                    "result" + str(group.id))
-            #     self.result = base
-            # else:
-            #     print("Retrain does not restore enough!")
-            #     group.best_index += 1
-
-            base = ModelWrapper.from_model(model, self.path,
-                                           "result" + str(group.id))
-            self.result = base
+            if found:
+                result.update(group.result)
 
             print()
             print("------------------------------------------------")
             print("Finished group with layer='", group.main_layer, "'", sep="")
             print("------------------------------------------------")
             print()
+
+        m = result.to_model()
+        m.compile(**kwargs)
+
+        print("Retrain another 5 epochs")
+
+        m.fit(x=x_train, y=y_train,
+              epochs=5, batch_size=128,
+              validation_data=(x_test, y_test), verbose=1)
+
+        # if hist.history['val_acc'][-1] > expected - 0.5 * epsilon:
+        #     base = ModelWrapper.from_model(model, self.path,
+        #                                    "result" + str(group.id))
+        #     self.result = base
+        # else:
+        #     print("Retrain does not restore enough!")
+        #     group.best_index += 1
+
+        base = ModelWrapper.from_model(m, self.path,
+                                       "result" + str(group.id))
+        self.result = base

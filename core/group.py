@@ -86,11 +86,11 @@ class Group():
             #    if val != self.base.layer_configs[key]}
 
             hist = model.fit(x=self.in_data, y=self.out_data,
-                             epochs=5, batch_size=128, verbose=1)
+                             epochs=20, batch_size=128, verbose=1)
 
             print("Accuracy: " + str(hist.history['acc'][-1]))
             print("Expected: >" + str(0.99))
-            if hist.history['acc'][-1] > 0.90:
+            if hist.history['acc'][-1] > 0.98:
                 print("Found")
                 self.result = ModelWrapper.from_model(
                     model, path, "group_" + str(self.id) + "_" + str(i))
