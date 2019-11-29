@@ -107,6 +107,9 @@ class Group():
         (x_train, y_train), (x_test, y_test) = dataset
         print("Evaluate group", self.id)
         print("Main layer =", self.main_layer)
+
+        update = 0
+
         for i, instance in enumerate(self.instances):
 
             tmp = self.full_wrapper.copy()
@@ -115,26 +118,29 @@ class Group():
             model = tmp.to_model()
             model.compile(**kwargs)
 
-            # diff_dict = {
-            #    key: val for (key, val) in tmp.layer_configs.items()
-            #    if val != self.base.layer_configs[key]}
-
             hist = model.fit(x=x_train, y=y_train,
-                             epochs=5, batch_size=128,
+                             epochs=10, batch_size=128,
                              validation_data=(x_test, y_test), verbose=1)
 
-            print("Accuracy: " + str(hist.history['val_acc'][-1]))
-            print("Expected: >" + str(expected - epsilon))
-            if hist.history['val_acc'][-1] > expected - epsilon:
-                print("Found")
-                self.result = ModelWrapper.from_model(
-                    model, path, "group_" + str(self.id))
+            # self.result = ModelWrapper.from_model(
+            #     model, path, "group_" + str(self.id))
 
-                print("Finished group", self.id, "new model saved")
-                self.best_index = i
-                return True
+            # print("Finished group", self.id, "new model saved")
+            # self.best_index = i
+            # return 0
+
+            for value in hist.history['val_acc']:
+                if value > expected - epsilon:
+                    print("Found")
+                    self.result = ModelWrapper.from_model(
+                        model, path, "group_" + str(self.id))
+
+                    print("Finished group", self.id, "new model saved")
+                    self.best_index = i
+                    return update
+            update += 1
 
         print("Finished group", self.id, "no improvement")
         self.result = self.full_wrapper
         self.best_index = -1
-        return False
+        return update
