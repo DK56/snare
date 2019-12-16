@@ -1,5 +1,6 @@
 from copy import deepcopy
 from .model_wrapper import ModelWrapper
+import numpy as np
 
 
 class Generation():
@@ -53,10 +54,15 @@ class Generation():
             print("------------------------------------------------")
             print()
 
-            found = group.eval(
+            group.full_wrapper = result
+
+            p_update = group.eval_full(
                 dataset, expected, epsilon, self.path, **kwargs)
 
-            if found:
+            # p_update = group.eval(
+            #     dataset, expected, epsilon, self.path, **kwargs)
+
+            if p_update < 2:
                 result.update(group.result)
 
             print()
