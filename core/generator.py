@@ -4,10 +4,11 @@ import sys
 from copy import deepcopy
 from tensorflow.python.keras.models import Sequential
 from tensorflow.python.keras import backend as K
+from tensorflow.python.keras import losses
 from .generation import Generation
 from .group import Group
 from .model_wrapper import ModelWrapper
-from .operation import prune_low_magnitude_neurons, InputPruner, NeuronPruner
+from .operation import prune_random_connections, prune_low_activation_neurons, prune_low_magnitude_connections, prune_low_gradient_neurons, prune_low_magnitude_neurons, prune_random_neurons, InputPruner, NeuronPruner
 
 
 class Generator():
@@ -111,16 +112,20 @@ class Generator():
 
         for group in groups:
             gen.add_group(group)
-
-            status = self.layer_status[group.main_layer]
-            if status == 4:
+            print(group.main_layer.name)
+            if group.main_layer != best:
                 continue
 
-            percentages = [0.6, 0.3, 0.2, 0.001]
-            percentages = [p for i, p in enumerate(percentages) if i >= status]
-            prune_low_gradient_neurons(group, percentages, self.dataset,
-                                       loss=losses.categorical_crossentropy, optimizer="SGD", metrics=["accuracy"])
-            # prune_low_magnitude_neurons(group, percentages)
+            p, _, _, _ = self.layer_status[best]
+            if p >= 4:
+                percentages = [p / 100., (p / 2) / 100.]
+            else:
+                percentages = [p / 100.]
+            # prune_low_gradient_neurons(group, percentages, self.dataset,
+            #                            loss=losses.categorical_crossentropy, optimizer="SGD", metrics=["accuracy"])
+            prune_low_magnitude_neurons(group, percentages)
+            # prune_low_magnitude_connections(group, percentages)
+            # prune_random_connections(group, percentages)
             # prune_random_neurons(group, percentages)
 
         print()
