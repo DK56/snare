@@ -27,6 +27,7 @@ class Group():
         for i, layer in enumerate(wrapper.layers):
             if layer.is_important():
                 processable_layers.append(i)
+        return processable_layers
 
     @classmethod
     def find_layer_groups(cls, layername, model_wrapper):
