@@ -149,7 +149,7 @@ class Group():
             hist = model.fit(x=x_train, y=y_train,
                              epochs=20, batch_size=128,
                              validation_data=(x_test, y_test),
-                             callbacks=[checkpoint], verbose=1)
+                             callbacks=[checkpoint], verbose=2)
 
             # if self.main_layer.name == 'block5_conv3':
             #     x = m1.predict(x_train)
