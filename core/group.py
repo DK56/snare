@@ -1,12 +1,15 @@
 import numpy as np
 from abc import ABC, abstractmethod
+from tensorflow.python.keras.optimizer_v2.adam import Adam
 from tensorflow.python.keras.models import Sequential
 from tensorflow.python.keras import layers
 from tensorflow.python.keras import losses
 from .model_wrapper import ModelWrapper
+from tensorflow.python.keras import backend as K
 
 
 class Group():
+    state = 0
 
     def __init__(self, group_index, main_layer, full_wrapper, base_wrapper):
         self.main_layer = main_layer
@@ -65,43 +68,51 @@ class Group():
         return groups
 
     def infer_base(self, to_infer):
-        self.in_data = to_infer
         model = self.base_wrapper.to_model()
         model.compile(loss=losses.mse, optimizer="SGD", metrics=["accuracy"])
-        self.out_data = model.predict(to_infer)
-        return self.out_data
+        tmp = model.predict(to_infer)
+        if self.instances:
+            self.in_data = to_infer
+            self.out_data = tmp
+        return tmp
 
     def eval(self, dataset, expected, epsilon, path, **kwargs):
         (x_train, y_train), (x_test, y_test) = dataset
         print("Evaluate group", self.id)
         print("Main layer =", self.main_layer)
-        for i, instance in enumerate(self.instances):
 
-            model = instance.to_model()
-            model.compile(loss=losses.mse, optimizer="SGD",
+        update = 0
+        for i, instance in enumerate(self.instances):
+            tmp = self.base_wrapper.copy()
+            tmp.update(instance)
+
+            model = tmp.to_model()
+            model.compile(loss=losses.mse, optimizer="Adam",
                           metrics=["accuracy"])
 
-            # diff_dict = {
-            #    key: val for (key, val) in tmp.layer_configs.items()
-            #    if val != self.base.layer_configs[key]}
-
+            # Retrain
             hist = model.fit(x=self.in_data, y=self.out_data,
-                             epochs=20, batch_size=128, verbose=1)
+                             epochs=50, batch_size=128, verbose=1)
 
             print("Accuracy: " + str(hist.history['acc'][-1]))
             print("Expected: >" + str(0.99))
-            if hist.history['acc'][-1] > 0.98:
-                print("Found")
-                self.result = ModelWrapper.from_model(
-                    model, path, "group_" + str(self.id) + "_" + str(i))
+            for value in hist.history['acc']:
+                if value > 0.95:
+                    print("Found")
+                    tmp.update(ModelWrapper.from_model(
+                        model, path, "group_" + str(self.id) + "_" + str(i)))
 
-                self.best_index = i
-                return True
+                    self.result = tmp
+
+                    print("Finished group", self.id, "new model saved")
+                    self.best_index = i
+                    return update
+            update += 1
 
         print("Finished group", self.id, "no improvement")
         self.result = self.base_wrapper
         self.best_index = -1
-        return False
+        return update
 
     def eval_full(self, dataset, expected, epsilon, path, **kwargs):
         (x_train, y_train), (x_test, y_test) = dataset
