@@ -12,6 +12,8 @@ from .operation import prune_random_connections, prune_low_activation_neurons, p
 
 
 class Generator():
+    IMPORTANT = ['conv2d', 'conv2d_1', 'conv1d', 'conv1d_1',
+                 'conv1d_2', 'conv1d_3', 'conv1d_4', 'dense', 'dense_1']
 
     def __init__(self, model: Sequential, tmp_path):
         self.model = model
@@ -120,6 +122,19 @@ class Generator():
         K.clear_session()
         assert self.current_gen >= 0
         assert os.path.isdir(self.tmp_path)
+
+        base = self.gens[self.current_gen].result
+
+        for layer in base.layers:
+            p, n_score, p_score, f_score = self.layer_status[layer]
+            if layer.is_important():
+                print(layer.name, ": ", p * (n_score + p_score +
+                                             f_score) / 100., p, n_score, p_score, f_score)
+            else:
+                assert(p == 0)
+
+        best = self.get_best_layer()
+
         current_gen = self.current_gen + 1
 
         gen_path = os.path.join(self.tmp_path, 'gen_' + str(current_gen))
@@ -129,17 +144,26 @@ class Generator():
         base = self.gens[current_gen - 1].result
         gen = Generation(current_gen, base, gen_path)
 
-        groups = Group.create_groups(base, 2, 0)
-        if current_gen % 2:
-            groups = Group.create_groups(base, 2, 0)
+        # if current_gen % 2:
+        #     groups = Group.create_groups(base, 1, 0)
+        # else:
+        #     groups = Group.create_groups(base, 2, 1)
+
+        # if best.name in ['conv1d', 'conv1d_2', 'conv1d_4', 'dense_1']:
+        # if best.name in ['conv2d', 'dense']:
+        # if best.name in ['block1_conv1', 'block2_conv1', 'block3_conv1', 'block3_conv3', 'block4_conv2', 'block5_conv1', 'block5_conv3', 'dense_1']:
+        if best.name in ['dense_1']:
+            groups = Group.create_groups(base, 2, 3)
         else:
-            groups = Group.create_groups(base, 2, 1)
+            groups = Group.create_groups(base, 2, 0)
+        # groups = Group.create_groups(base, 1, 0)
 
         print()
         print("------------------------------------------------")
         print("Build all groups for generation", current_gen)
         print("------------------------------------------------")
         print()
+        print("Best:", best)
 
         for group in groups:
             gen.add_group(group)
