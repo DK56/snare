@@ -19,12 +19,16 @@ class Generator():
         self.model = model
         self.compile_args = compile_args
         self.tmp_path = tmp_path
-        self.gens = []
+        # self.gens = []
         self.current_gen = -1
         self.layer_status = {}
 
+    def get_current_gen(self):
+        # return self.gens[self.current_gen]
+        return self.gen
+
     def calculate_layer_score(self):
-        base = self.gens[self.current_gen].result
+        base = self.get_current_gen().result
         new_status = self.layer_status
 
         # (% percentage, % filters, % params, % flops)
@@ -76,11 +80,11 @@ class Generator():
         self.layer_status = new_status
 
     def get_best_layer(self):
-        base = self.gens[self.current_gen].result
+        base = self.get_current_gen().result
         best_value = 0
         for layer in base.layers:
             p, n_score, p_score, f_score = self.layer_status[layer]
-            score = p * (4 * n_score + p_score + f_score)
+            score = p * (2 * n_score + p_score + f_score)
             if score > best_value:
                 best = layer
                 best_value = score
@@ -116,15 +120,17 @@ class Generator():
         #     if layer.name in ['conv1d']:
         #         self.layer_status[layer] = 2
 
-        self.gens.append(Generation(0, base, gen_path))
+        self.gen = Generation(0, base, gen_path)
+        # self.gens.append(Generation(0, base, gen_path))
         self.current_gen = 0
 
-    def build_next_gen(self):
+    def build_next_gen(self, pruning_layer=None):
         K.clear_session()
         assert self.current_gen >= 0
         assert os.path.isdir(self.tmp_path)
 
-        base = self.gens[self.current_gen].result
+        # base = self.gens[self.current_gen].result
+        base = self.get_current_gen().result
 
         for layer in base.layers:
             p, n_score, p_score, f_score = self.layer_status[layer]
@@ -135,14 +141,12 @@ class Generator():
                 assert(p == 0)
 
         best = self.get_best_layer()
-
         current_gen = self.current_gen + 1
 
         gen_path = os.path.join(self.tmp_path, 'gen_' + str(current_gen))
         assert not os.path.exists(gen_path)
         os.mkdir(gen_path)
 
-        base = self.gens[current_gen - 1].result
         gen = Generation(current_gen, base, gen_path)
 
         # if current_gen % 2:
@@ -192,7 +196,8 @@ class Generator():
         print()
 
         self.current_gen = current_gen
-        self.gens.append(gen)
+        # self.gens.append(gen)
+        self.gen = gen
         return gen
 
     def update_status(self, update_value):

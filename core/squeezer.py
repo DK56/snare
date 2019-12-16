@@ -85,7 +85,7 @@ class Squeezer():
                 print("]", end="")
 
             if generator.has_next():
-                model = generator.gens[-1].result.to_model()
+                model = generator.get_current_gen().result.to_model()
                 model.summary()
 
             print()
