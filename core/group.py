@@ -22,17 +22,32 @@ class Group():
         self.best_index = -1
 
     @classmethod
-    def create_groups(cls, model_wrapper, min_group_size, offset=0):
-        assert min_group_size > 0
-
-        wrapper = model_wrapper.copy()
-
-        groups = []
-
+    def _get_processable_layers(cls, wrapper):
         processable_layers = []
         for i, layer in enumerate(wrapper.layers):
             if layer.is_important():
                 processable_layers.append(i)
+
+    @classmethod
+    def find_layer_groups(cls, layername, model_wrapper):
+        # TODO split in three separate models
+        wrapper = model_wrapper.copy()
+
+        layernames = [layer.name for layer in wrapper.layers]
+        main_layer = wrapper.layers[layernames.index(layername)]
+
+        group = cls(0, main_layer, wrapper, wrapper)
+
+        return [group]
+
+    @classmethod
+    def create_groups(cls, model_wrapper, min_group_size, offset=0):
+        assert min_group_size > 0
+
+        wrapper = model_wrapper.copy()
+        groups = []
+
+        processable_layers = Group._get_processable_layers(wrapper)
 
         start = 0
         end = 0
@@ -40,7 +55,6 @@ class Group():
         group_number = 0
 
         max_end = len(wrapper.layers)
-        print(processable_layers)
 
         for i, index in enumerate(processable_layers):
             if index < offset:

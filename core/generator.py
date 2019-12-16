@@ -153,11 +153,13 @@ class Generator():
         # if best.name in ['conv1d', 'conv1d_2', 'conv1d_4', 'dense_1']:
         # if best.name in ['conv2d', 'dense']:
         # if best.name in ['block1_conv1', 'block2_conv1', 'block3_conv1', 'block3_conv3', 'block4_conv2', 'block5_conv1', 'block5_conv3', 'dense_1']:
-        if best.name in ['dense_1']:
-            groups = Group.create_groups(base, 2, 3)
-        else:
-            groups = Group.create_groups(base, 2, 0)
+        # if best.name in ['dense_1']:
+        #     groups = Group.create_groups(base, 2, 3)
+        # else:
+        #     groups = Group.create_groups(base, 2, 0)
         # groups = Group.create_groups(base, 1, 0)
+
+        groups = Group.find_layer_groups(best.name, base)
 
         print()
         print("------------------------------------------------")
