@@ -71,14 +71,24 @@ class Generation():
             print("------------------------------------------------")
             print()
 
+
+
         m = result.to_model()
         m.compile(**kwargs)
+        (x_train, y_train), (x_test, y_test) = dataset
+        test_score = m.evaluate(x_test, y_test)
+        if test_score[1] > expected:
+            expected = test_score[1]
 
         print("Retrain another 5 epochs")
 
-        m.fit(x=x_train, y=y_train,
-              epochs=5, batch_size=128,
-              validation_data=(x_test, y_test), verbose=1)
+        # m = result.to_model()
+        # m.compile(**kwargs)
+        # m.evaluate(x_test, y_test)
+
+        # m.fit(x=x_train, y=y_train,
+        #       epochs=5, batch_size=128,
+        #       validation_data=(x_test, y_test), verbose=1)
 
         # if hist.history['val_acc'][-1] > expected - 0.5 * epsilon:
         #     base = ModelWrapper.from_model(model, self.path,
@@ -88,6 +98,10 @@ class Generation():
         #     print("Retrain does not restore enough!")
         #     group.best_index += 1
 
-        base = ModelWrapper.from_model(m, self.path,
-                                       "result" + str(group.id))
-        self.result = base
+        # print("Non-zero:",
+        #       np.count_nonzero(m.get_layer("dense").get_weights()[0]))
+        # base = ModelWrapper.from_model(m, self.path,
+        #                                "result" + str(group.id))
+
+        # self.result = base
+        return p_update
