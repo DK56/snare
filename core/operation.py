@@ -188,3 +188,91 @@ def _prune_neurons(group, percentages, indices):
         instances.append(instance)
 
     group.instances = instances
+
+
+def prune_low_activation_neurons(group, percentages, dataset, **kwargs):
+    main_layer = group.main_layer
+
+    model = group.full_wrapper.to_model()
+    model.compile(**kwargs)
+
+    (x_train, y_train), (x_test, y_test) = dataset
+
+    input_tensors = model.inputs + model.sample_weights + \
+        model._targets + [K.learning_phase()]
+    infer_fn = K.function(inputs=input_tensors,
+                          outputs=model.get_layer(main_layer.name).output)
+    inputs = [x_test, None, y_test, 0]
+
+    sums = infer_fn(inputs)
+    sums = np.abs(sums)
+
+    while(sums.ndim > 1):
+        sums = sums.sum(axis=sums.ndim - 2)
+
+    indices = np.argsort(sums)
+    _prune_neurons(group, percentages, indices)
+
+
+def prune_low_gradient_neurons(group, percentages, dataset, **kwargs):
+    main_layer = group.main_layer
+
+    # weights = main_layer.weights.get()
+    model = group.full_wrapper.to_model()
+    model.compile(**kwargs)
+
+    # w = weights[0]
+    # b = weights[1]
+    (x_train, y_train), (x_test, y_test) = dataset
+
+    layer = model.get_layer(main_layer.name)
+    # weight_tensors = layer.trainable_weights  # weight tensors
+    gradients = model.optimizer.get_gradients(
+        model.total_loss, layer.output)  # gradient tensors
+
+    input_tensors = model.inputs + model.sample_weights + \
+        model._targets + [K.learning_phase()]
+    infer_fn = K.function(inputs=input_tensors,
+                          outputs=model.get_layer(main_layer.name).output)
+    grad_fn = K.function(inputs=input_tensors,
+                         outputs=gradients)
+    inputs = [x_test, None, y_test, 0]
+
+    activations = infer_fn(inputs)
+    # while(activations.ndim > 1):
+    #     activations = activations.sum(axis=activations.ndim - 2)
+
+    grads = grad_fn(inputs)
+    grads = grads[0]
+    print(grads.shape)
+    print(activations.shape)
+    sums = grads * activations
+    sums = np.abs(sums)
+    while(sums.ndim > 1):
+        sums = sums.sum(axis=sums.ndim - 2)
+
+    indices = np.argsort(sums)
+    _prune_neurons(group, percentages, indices)
+
+
+def prune_random_neurons(group, percentages):
+    main_layer = group.main_layer
+    weights = main_layer.weights.get()
+
+    w = weights[1]
+    indices = np.arange(w.size)
+    np.random.shuffle(indices)
+    _prune_neurons(group, percentages, indices)
+
+
+def prune_low_magnitude_neurons(group, percentages):
+    main_layer = group.main_layer
+    weights = main_layer.weights.get()
+
+    w = weights[0]
+    # b = weights[1]
+    sums = np.abs(w)
+    while(sums.ndim > 1):
+        sums = sums.sum(axis=sums.ndim - 2)
+    indices = np.argsort(sums)
+    _prune_neurons(group, percentages, indices)
