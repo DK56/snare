@@ -30,16 +30,21 @@ class Generator():
                 new_status[layer] = (0, 0, 0, 0)
 
             for layer in base.layers:
-                if layer.name in Generator.IMPORTANT:
-                    new_status[layer] = (64, 0, 0, 0)
+                if layer.is_important():
+                    new_status[layer] = (32, 0, 0, 0)
+                if(layer.name == "dense_2"):
+                    new_status[layer] = (0, 0, 0, 0)
 
         m_neurons = 0
         m_params = 0
-        m_flops = 0
+        m_flops = 1
         for layer in base.layers:
             m_neurons += layer.neurons
             m_params += layer.params
             m_flops += layer.flops
+
+        print("FLOPS:", m_flops)
+        print("Params:", m_params)
 
         for layer in base.layers:
             p, _, _, _ = new_status[layer]
@@ -47,12 +52,38 @@ class Generator():
                 continue
             if p <= 2:
                 new_status[layer] = (0, 0, 0, 0)
+                continue
+            if (p * layer.neurons) / 100 == (4 * layer.neurons) / 100:
+                p = 4
 
             neuron_score = layer.neurons / m_neurons
             params_score = layer.params / m_params
+            start = 0
+            for l in base.layers:
+                if start == 1 and l.is_important():
+                    params_score += l.params / m_params
+                    break
+                if layer == l:
+                    start = 1
+            params_score = params_score / 2
             flops_score = layer.flops / m_flops
 
             new_status[layer] = (p, neuron_score, params_score, flops_score)
+
+        self.layer_status = new_status
+
+    def get_best_layer(self):
+        base = self.gens[self.current_gen].result
+        best_value = 0
+        for layer in base.layers:
+            p, n_score, p_score, f_score = self.layer_status[layer]
+            score = p * (4 * n_score + p_score + f_score)
+            if score > best_value:
+                best = layer
+                best_value = score
+
+        assert(best_value > 0)
+        return best
 
     def prepare(self, dataset):
         assert os.path.isdir(self.tmp_path)
@@ -138,19 +169,14 @@ class Generator():
         self.gens.append(gen)
         return gen
 
-    def update_status(self):
-        gen = self.gens[self.current_gen]
-
-        for group in gen.groups:
-            index = group.best_index
-            if index == -1:
-                self.layer_status[group.main_layer] = 4
-            else:
-                self.layer_status[group.main_layer] += index
+    def update_status(self, update_value):
+        best = self.get_best_layer()
+        q, a, b, c = self.layer_status[best]
+        self.layer_status[best] = (q >> update_value, a, b, c)
 
     def has_next(self):
-        for layer_status in self.layer_status.values():
-            if layer_status < 4:
+        for status in self.layer_status.values():
+            if status[0] != 0:
                 return True
         return False
 
