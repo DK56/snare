@@ -1,11 +1,13 @@
 import numpy as np
 from abc import ABC, abstractmethod
 from tensorflow.python.keras.optimizer_v2.adam import Adam
-from tensorflow.python.keras.models import Sequential
+from tensorflow.python.keras.models import Sequential, load_model
 from tensorflow.python.keras import layers
 from tensorflow.python.keras import losses
+from tensorflow.python.keras.callbacks import ModelCheckpoint
 from .model_wrapper import ModelWrapper
 from tensorflow.python.keras import backend as K
+import os
 
 
 class Group():
@@ -139,10 +141,15 @@ class Group():
             # m1.summary()
             # m2.compile(**kwargs)
             # m2.summary()
+            tmp_path = os.path.join(path, 'tmp_result.h5')
+            checkpoint = ModelCheckpoint(
+                tmp_path, monitor='val_acc', verbose=0,
+                save_best_only=True, mode='max')
 
             hist = model.fit(x=x_train, y=y_train,
                              epochs=20, batch_size=128,
-                             validation_data=(x_test, y_test), verbose=1)
+                             validation_data=(x_test, y_test),
+                             callbacks=[checkpoint], verbose=1)
 
             # if self.main_layer.name == 'block5_conv3':
             #     x = m1.predict(x_train)
