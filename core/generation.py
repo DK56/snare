@@ -1,4 +1,5 @@
 from copy import deepcopy
+from tensorflow.python.keras import backend as K
 from .model_wrapper import ModelWrapper
 import numpy as np
 
@@ -39,6 +40,7 @@ class Generation():
 
     def eval_groups(self, dataset, expected, epsilon, **kwargs):
         assert len(self.group_best) == 0
+        K.clear_session()
 
         # self.infer_training_set(dataset)
 
