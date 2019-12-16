@@ -169,13 +169,16 @@ class LayerWrapper():
         return 0
 
     def __init__(self, name, classname, config,
-                 input_shape, output_shape, weights: WeightsDict):
+                 neurons, params, flops, input_shape, output_shape, weights: WeightsDict):
         self.name = name
         self.classname = classname
         self.config = config
         self.weights = weights
         self.input_shape = input_shape
         self.output_shape = output_shape
+        self.neurons = neurons
+        self.params = params
+        self.flops = flops
 
     @classmethod
     def from_layer(cls, layer, path, suffix=''):
@@ -196,15 +199,38 @@ class LayerWrapper():
             os.mkdir(layer_dir)
 
         w = FileWeights(os.path.join(layer_dir, weights_file))
-        w.save(layer.get_weights())
+        weights = layer.get_weights()
+        w.save(weights)
+        config = layer.get_config()
+        if "units" in config:
+            neurons = layer.units
+        elif "filters" in config:
+            neurons = layer.filters
+        else:
+            neurons = 0
+        params = 0
+        for p in weights:
+            params += p.size
 
-        return cls(name, classname, layer.get_config(),
+        return cls(name, classname, config,
+                   neurons, params, LayerWrapper.get_flops(layer),
                    layer.input_shape[1:], layer.output_shape[1:], w)
 
     def is_important(self):
         return self.classname in LayerWrapper.IMPORTANT_LAYERS
 
+    def is_batch_norm(self):
+        return self.classname in LayerWrapper.BATCH_NORM_LAYERS
+
     def to_layer(self):
+        if self.classname == "CustomConnected":
+            return layers.deserialize({
+                'class_name': "Dense",
+                'config': self.config})
+        if self.classname == "CustomConv":
+            return layers.deserialize({
+                'class_name': "Conv1D",
+                'config': self.config})
         return layers.deserialize({
             'class_name': self.classname,
             'config': self.config})
@@ -219,7 +245,8 @@ class LayerWrapper():
 
     def __copy__(self):
         return type(self)(self.name, self.classname, self.config.copy(),
-                          self.input_shape, self.output_shape, self.weights)
+                          self.neurons, self.params, self.flops, self.input_shape,
+                          self.output_shape, self.weights)
 
     def __repr__(self):
         return self.name
@@ -315,8 +342,66 @@ class ModelWrapper():
         if 'batch_input_shape' not in self.layers[0].config:
             model.add(layers.Input(shape=self.layers[0].input_shape))
 
+        for i, l_wrapper in enumerate(self.layers):
+            layer = l_wrapper.to_layer()
+            model.add(layer)
+            weights = l_wrapper.weights.get()
+            layer.set_weights(weights)
+
+        return model
+
+    def to_splitted_model(self, split):
+        m1 = Sequential()
+
+        if 'batch_input_shape' not in self.layers[0].config:
+            m1.add(layers.Input(shape=self.layers[0].input_shape))
+
+        for i, l_wrapper in enumerate(self.layers):
+            if i == split:
+                break
+            layer = l_wrapper.to_layer()
+            m1.add(layer)
+            weights = l_wrapper.weights.get()
+            layer.set_weights(weights)
+
+        m2 = Sequential()
+        m2.add(layers.Input(m1.output_shape[1:]))
+
+        for i, l_wrapper in enumerate(self.layers):
+            if i < split:
+                continue
+            layer = l_wrapper.to_layer()
+            m2.add(layer)
+            weights = l_wrapper.weights.get()
+            layer.set_weights(weights)
+
+        return m1, m2
+
+    def to_trainable_model(self):
+        model = Sequential()
+
+        if 'batch_input_shape' not in self.layers[0].config:
+            model.add(layers.Input(shape=self.layers[0].input_shape))
+
         for l_wrapper in self.layers:
             layer = l_wrapper.to_layer()
+            # if layer.name == "dense":
+            #     weights = l_wrapper.weights.get()
+            #     w = weights[0]
+            #     mask = ((w > 0.001) | (w < -0.001)).astype(int)
+            #     print(mask)
+
+            #     layer = CustomConnected(layer.units, mask, name="dense")
+
+            if layer.name == "conv1d":
+                if 'batch_input_shape' in self.layers[0].config:
+                    model.add(layers.Input(shape=self.layers[0].input_shape))
+                weights = l_wrapper.weights.get()
+                w = weights[0]
+                mask = ((w > 0.001) | (w < -0.001)).astype(int)
+
+                layer = CustomConv(
+                    layer.filters, layer.kernel_size, mask, padding=layer.padding, name=layer.name)
             model.add(layer)
             weights = l_wrapper.weights.get()
             layer.set_weights(weights)
