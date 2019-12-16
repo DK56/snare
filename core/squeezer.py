@@ -1,9 +1,13 @@
 import os
 from tensorflow.python.keras.models import Sequential
 from . import Generator
+from .model_wrapper import LayerWrapper
 from tensorflow.python.keras import losses
+import tensorflow as tf
 from tensorflow.python.keras.datasets import mnist
 from tensorflow.python import keras
+import tensorflow.keras.backend as K
+import numpy as np
 
 
 class Squeezer():
@@ -11,8 +15,23 @@ class Squeezer():
         self.model = model
         assert os.path.isdir(tmp_path)
         self.tmp_path = os.path.join(tmp_path, 'tmp')
+        s = 0
+        for layer in model.layers:
+            flops = LayerWrapper.get_flops(layer)
+            print(layer.name, flops)
+            s += flops
 
-    def squeeze(self, dataset, acc, threshold) -> Sequential:
+        print("FLOPS:", s)
+
+    def squeeze(self, dataset,
+                threshold, main_metric='val_acc', metric_val=None,
+                batch_size=32, **kwargs) -> Sequential:
+
+        if metric_val is None:
+            self.model.compile(**kwargs)
+            _, (x_test, y_test) = dataset
+            self.model.evaluate(x_test, y_test, batch_size)
+
         if not os.path.exists(self.tmp_path):
             os.mkdir(self.tmp_path)
         model_dir = self.model.name
@@ -27,7 +46,10 @@ class Squeezer():
         os.mkdir(model_path)
 
         generator = Generator(self.model, model_path)
-        generator.prepare()
+        generator.prepare(dataset)
+        data = [0.9084]
+        w = self.model.count_params()
+        generator.calculate_layer_score()
 
         while(generator.has_next()):
             print()
@@ -38,18 +60,37 @@ class Squeezer():
             print()
             print()
             gen = generator.build_next_gen()
-            gen.eval_groups(dataset, acc, threshold,
-                            loss=losses.categorical_crossentropy,
-                            optimizer="SGD", metrics=["accuracy"])
+            # update_value = gen.eval_groups(dataset, 0.9083, threshold,
+            # update_value = gen.eval_groups(dataset, 0.99, threshold,
+            #                                loss=losses.categorical_crossentropy,
+            #                                optimizer="SGD", metrics=["accuracy"])
+            update_value = gen.eval_groups(dataset, 0.7009, threshold,
+                                           loss=losses.categorical_crossentropy,
+                                           optimizer="Adam", metrics=["accuracy"])
 
             # gen.train_result(dataset,
             #                  loss=losses.categorical_crossentropy,
             #                  optimizer="SGD", metrics=["accuracy"])
 
-            generator.update_status()
+            generator.update_status(update_value)
+
+            log = False
+            if log:
+                m = gen.result.to_model()
+                m.compile(loss=losses.categorical_crossentropy,
+                          optimizer="SGD", metrics=["accuracy"])
+                _, (x_test, y_test) = dataset
+                score = m.evaluate(x_test, y_test)
+                data.append(score[1])
+                print("[", end="")
+                for i, d in enumerate(data):
+                    print(
+                        "(" + str(i) + "," + "{0:.4f}".format(d) + ") ", end="")
+                print("]", end="")
 
             if generator.has_next():
-                generator.gens[-1].result.to_model().summary()
+                model = generator.gens[-1].result.to_model()
+                model.summary()
 
             print()
             print()
@@ -58,6 +99,7 @@ class Squeezer():
             print("------------------------------------------------")
             print()
             print()
+            generator.calculate_layer_score()
 
         # best_model_structure = generator.get_model_structure(0, 0)
         # best_model_structure.to_model()
