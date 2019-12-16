@@ -74,7 +74,6 @@ class Generation():
 
 
         m = result.to_model()
-        m.compile(**kwargs)
         (x_train, y_train), (x_test, y_test) = dataset
         test_score = m.evaluate(x_test, y_test)
         if test_score[1] > expected:

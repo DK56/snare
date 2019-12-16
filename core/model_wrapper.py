@@ -263,11 +263,12 @@ class LayerWrapper():
 
 class ModelWrapper():
 
-    def __init__(self, layers):
+    def __init__(self, layers, compile_args):
         self.layers = layers
+        self.compile_args = compile_args
 
     @classmethod
-    def from_model(cls, model, path, suffix=''):
+    def from_model(cls, model, compile_args, path, suffix=''):
         # assert Sequential
 
         assert os.path.exists(path)
@@ -276,7 +277,7 @@ class ModelWrapper():
         l_wrappers = [LayerWrapper.from_layer(
             layer, path, suffix) for layer in model.layers]
 
-        return cls(l_wrappers)
+        return cls(l_wrappers, compile_args)
 
     @classmethod
     def from_model_wrapper(cls, wrapper, start, end):
@@ -287,7 +288,12 @@ class ModelWrapper():
             l_wrapper = wrapper.layers[i]
             layers.append(l_wrapper.copy())
 
-        return cls(layers)
+        if start == 0 and len(wrapper.layers) == end:
+            return cls(layers, wrapper.compile_args)
+        else:
+            compile_args = wrapper.compile_args.copy()
+            compile_args['loss'] = 'mse'
+            return cls(layers, compile_args)
 
     # @staticmethod
     # def _save_configs(configs, path, suffix=None):
@@ -348,9 +354,11 @@ class ModelWrapper():
             weights = l_wrapper.weights.get()
             layer.set_weights(weights)
 
+        model.compile(**self.compile_args)
         return model
 
     def to_splitted_model(self, split):
+        # TODO check compile_args
         m1 = Sequential()
 
         if 'batch_input_shape' not in self.layers[0].config:
@@ -405,10 +413,14 @@ class ModelWrapper():
             model.add(layer)
             weights = l_wrapper.weights.get()
             layer.set_weights(weights)
-
+        model.compile(**self.compile_args)
         return model
 
     def update(self, to_update):
+        # Update compile_args only if both models have the same amount of layers
+        if(len(to_update.layers) == len(self.layers)):
+            self.compile_args = to_update.compile_args
+
         start = self.layers.index(to_update.layers[0])
         for i in range(len(to_update.layers)):
             self.layers[start + i] = to_update.layers[i].copy()
@@ -418,4 +430,5 @@ class ModelWrapper():
 
     def __copy__(self):
         layers = [layer.copy() for layer in self.layers]
-        return type(self)(layers)
+        compile_args = self.compile_args.copy()
+        return type(self)(layers, compile_args)

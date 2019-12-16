@@ -190,11 +190,10 @@ def _prune_neurons(group, percentages, indices):
     group.instances = instances
 
 
-def prune_low_activation_neurons(group, percentages, dataset, **kwargs):
+def prune_low_activation_neurons(group, percentages, dataset):
     main_layer = group.main_layer
 
     model = group.full_wrapper.to_model()
-    model.compile(**kwargs)
 
     (x_train, y_train), (x_test, y_test) = dataset
 
@@ -214,12 +213,11 @@ def prune_low_activation_neurons(group, percentages, dataset, **kwargs):
     _prune_neurons(group, percentages, indices)
 
 
-def prune_low_gradient_neurons(group, percentages, dataset, **kwargs):
+def prune_low_gradient_neurons(group, percentages, dataset):
     main_layer = group.main_layer
 
     # weights = main_layer.weights.get()
     model = group.full_wrapper.to_model()
-    model.compile(**kwargs)
 
     # w = weights[0]
     # b = weights[1]

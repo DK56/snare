@@ -15,8 +15,9 @@ class Generator():
     IMPORTANT = ['conv2d', 'conv2d_1', 'conv1d', 'conv1d_1',
                  'conv1d_2', 'conv1d_3', 'conv1d_4', 'dense', 'dense_1']
 
-    def __init__(self, model: Sequential, tmp_path):
+    def __init__(self, model: Sequential, compile_args, tmp_path):
         self.model = model
+        self.compile_args = compile_args
         self.tmp_path = tmp_path
         self.gens = []
         self.current_gen = -1
@@ -96,7 +97,7 @@ class Generator():
         # Build gen_0
         gen_path = os.path.join(self.tmp_path, 'gen_0')
         os.mkdir(gen_path)
-        base = ModelWrapper.from_model(self.model, gen_path)
+        base = ModelWrapper.from_model(self.model, self.compile_args, gen_path)
 
         # TODO
         # for layer in base.layers:
@@ -176,8 +177,7 @@ class Generator():
                 percentages = [p / 100., (p / 2) / 100.]
             else:
                 percentages = [p / 100.]
-            # prune_low_gradient_neurons(group, percentages, self.dataset,
-            #                            loss=losses.categorical_crossentropy, optimizer="SGD", metrics=["accuracy"])
+            # prune_low_gradient_neurons(group, percentages, self.dataset)
             prune_low_magnitude_neurons(group, percentages)
             # prune_low_magnitude_connections(group, percentages)
             # prune_random_connections(group, percentages)

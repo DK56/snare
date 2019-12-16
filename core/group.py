@@ -114,7 +114,7 @@ class Group():
         self.best_index = -1
         return update
 
-    def eval_full(self, dataset, expected, epsilon, path, **kwargs):
+    def eval_full(self, dataset, expected, epsilon, path):
         (x_train, y_train), (x_test, y_test) = dataset
         print("Evaluate group", self.id)
         print("Main layer =", self.main_layer)
@@ -133,7 +133,8 @@ class Group():
 
             # m1, m2 = tmp.to_splitted_model(20)
             model = tmp.to_model()
-            model.compile(**kwargs)
+            # model.compile(compile_args)
+
             # m1.compile(**kwargs)
             # m1.summary()
             # m2.compile(**kwargs)
@@ -163,7 +164,8 @@ class Group():
                     print("Found")
                     Group.state = model.optimizer.get_config()
                     tmp.update(ModelWrapper.from_model(
-                        model, path, "group_" + str(self.id)))
+                        load_model(tmp_path), tmp.compile_args,
+                        path, "group_" + str(self.id)))
                     #    m2, path, "group_" + str(self.id)))
                     self.result = tmp
 
