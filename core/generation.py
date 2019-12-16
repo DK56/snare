@@ -16,31 +16,6 @@ class Generation():
     def add_group(self, group):
         self.groups.append(group)
 
-    # def build_group_element(self, group_number, pos):
-    #     order = self.base.order.copy()
-    #     layer_configs = deepcopy(self.base.layer_configs)
-    #     layer_weights = self.base.layer_weights.copy()
-
-    #     layer_configs.update(self.groups[group_number][pos].layer_configs)
-    #     layer_weights.update(self.groups[group_number][pos].layer_weights)
-
-    #     return ModelWrapper(order, layer_configs, weights)
-
-    # def build_result(self):
-    #     assert len(self.groups) == len(self.group_best)
-    #     order = self.base.order.copy()
-    #     layer_configs = self.base.layer_configs.copy()
-    #     layer_weights = self.base.layer_weights.copy()
-
-    #     for i, group in enumerate(self.groups):
-    #         best = self.group_best[i]
-    #         assert best >= 0 and best < len(group)
-
-    #         layer_configs.update(group[best].layer_configs)
-    #         layer_weights.update(group[best].layer_weights)
-
-    #     return ModelWrapper(order, layer_configs, layer_weights)
-
     def train_result(self, dataset, **kwargs):
         (x_train, y_train), (x_test, y_test) = dataset
         model = self.result.to_model()
