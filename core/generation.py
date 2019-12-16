@@ -29,13 +29,17 @@ class Generation():
             model, self.path, 'result_trained')
         model.summary()
 
-    def eval_groups(self, dataset, expected, epsilon, **kwargs):
-        assert len(self.group_best) == 0
-        (x_train, y_train), (x_test, y_test) = dataset
-
-        current_in = x_train
+    def infer_training_set(self, dataset):
+        (x_train, _), _ = dataset
+        current_in = x_train[0:2000]
         for group in self.groups:
             current_in = group.infer_base(current_in)
+        print("INFER DATASET FINISHED")
+
+    def eval_groups(self, dataset, expected, epsilon, **kwargs):
+        assert len(self.group_best) == 0
+
+        # self.infer_training_set(dataset)
 
         result = self.base
 
