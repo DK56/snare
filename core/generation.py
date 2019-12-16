@@ -75,13 +75,13 @@ class Generation():
 
 
 
-        m = result.to_model()
-        (x_train, y_train), (x_test, y_test) = dataset
-        test_score = m.evaluate(x_test, y_test)
-        if test_score[1] > expected:
-            expected = test_score[1]
+        # m = result.to_model()
+        # (x_train, y_train), (x_test, y_test) = dataset
+        # test_score = m.evaluate(x_test, y_test)
+        # if test_score[1] > expected:
+        #     expected = test_score[1]
 
-        print("Retrain another 5 epochs")
+        # print("Retrain another 5 epochs")
 
         # m = result.to_model()
         # m.compile(**kwargs)
