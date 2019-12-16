@@ -32,7 +32,9 @@ class Squeezer():
         if metric_val is None:
             self.model.compile(**self.compile_args)
             _, (x_test, y_test) = dataset
-            self.model.evaluate(x_test, y_test, batch_size)
+            hist = self.model.evaluate(x_test, y_test, batch_size)
+            print("Accuracy:", hist[1])
+            metric_val = hist[1]
 
         if not os.path.exists(self.tmp_path):
             os.mkdir(self.tmp_path)
@@ -64,7 +66,8 @@ class Squeezer():
             gen = generator.build_next_gen()
             # update_value = gen.eval_groups(dataset, 0.9083, threshold,
             # update_value = gen.eval_groups(dataset, 0.99, threshold)
-            update_value = gen.eval_groups(dataset, 0.7009, threshold)
+            # update_value = gen.eval_groups(dataset, 0.7009, threshold)
+            update_value = gen.eval_groups(dataset, metric_val, threshold)
 
             # gen.train_result(dataset,
             #                  loss=losses.categorical_crossentropy,
