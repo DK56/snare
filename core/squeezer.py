@@ -51,7 +51,8 @@ class Squeezer():
 
         generator = Generator(self.model, self.compile_args, model_path)
         generator.prepare(dataset)
-        data = [0.9084]
+
+        data = [metric_val]
         w = self.model.count_params()
         generator.calculate_layer_score()
 
