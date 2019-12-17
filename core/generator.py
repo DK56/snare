@@ -198,9 +198,9 @@ class Generator():
                 percentages = [p / 100., (p / 2) / 100.]
             else:
                 percentages = [p / 100.]
-            # prune_low_gradient_neurons(group, percentages, self.dataset)
+            prune_low_gradient_neurons(group, percentages, self.dataset)
             # prune_low_magnitude_neurons(group, percentages)
-            prune_low_gradient_connections(group, percentages, self.dataset)
+            # prune_low_gradient_connections(group, percentages, self.dataset)
             # prune_random_connections(group, percentages)
             # prune_random_neurons(group, percentages)
 

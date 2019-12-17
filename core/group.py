@@ -149,8 +149,8 @@ class Group():
             tmp.update(instance)
 
             # m1, m2 = tmp.to_splitted_model(20)
-            # model = tmp.to_model()
-            model = tmp.to_trainable_model()
+            model = tmp.to_model()
+            # model = tmp.to_trainable_model()
             # model.compile(compile_args)
 
             # m1.compile(**kwargs)
