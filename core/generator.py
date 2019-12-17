@@ -8,7 +8,7 @@ from tensorflow.python.keras import losses
 from .generation import Generation
 from .group import Group
 from .model_wrapper import ModelWrapper
-from .operation import prune_random_connections, prune_low_activation_neurons, prune_low_magnitude_connections, prune_low_gradient_neurons, prune_low_magnitude_neurons, prune_random_neurons, InputPruner, NeuronPruner
+from .operation import prune_random_connections, prune_low_activation_neurons, prune_low_gradient_connections, prune_low_magnitude_connections, prune_low_gradient_neurons, prune_low_magnitude_neurons, prune_random_neurons, InputPruner, NeuronPruner
 
 
 class Generator():
@@ -53,29 +53,44 @@ class Generator():
         print("FLOPS:", m_flops)
         print("Params:", m_params)
 
-        for layer in base.layers:
+        next_flops = 0
+        next_params = 0
+
+        for layer in reversed(base.layers):
+            # if(layer.name == "conv1d"):
+            #     new_status[layer] = (
+            #         1, 1, 1, 1)
+            # else:
+            #     new_status[layer] = (
+            #         0, 0, 0, 0)
+            # continue
+
             p, _, _, _ = new_status[layer]
+
+            skip = False
             if p == 0:
-                continue
-            if p <= 2:
+                skip = True
+            elif p <= 2:
                 new_status[layer] = (0, 0, 0, 0)
-                continue
-            if (p * layer.neurons) / 100 == (4 * layer.neurons) / 100:
+                skip = True
+            elif (p * layer.neurons) / 100 == (4 * layer.neurons) / 100:
                 p = 4
 
+            if skip:
+                if layer.is_important():
+                    next_flops = layer.neurons
+                    next_params = layer.params
+                continue
+
             neuron_score = layer.neurons / m_neurons
-            params_score = layer.params / m_params
-            start = 0
-            for l in base.layers:
-                if start == 1 and l.is_important():
-                    params_score += l.params / m_params
-                    break
-                if layer == l:
-                    start = 1
-            params_score = params_score / 2
-            flops_score = layer.flops / m_flops
+
+            params_score = (layer.params + next_params) / (2 * m_params)
+            flops_score = (layer.flops + next_flops) / (2 * m_flops)
 
             new_status[layer] = (p, neuron_score, params_score, flops_score)
+
+            next_flops = layer.neurons
+            next_params = layer.params
 
         self.layer_status = new_status
 
@@ -84,7 +99,7 @@ class Generator():
         best_value = 0
         for layer in base.layers:
             p, n_score, p_score, f_score = self.layer_status[layer]
-            score = p * (2 * n_score + p_score + f_score)
+            score = p * (n_score + p_score + f_score)
             if score > best_value:
                 best = layer
                 best_value = score
@@ -184,8 +199,8 @@ class Generator():
             else:
                 percentages = [p / 100.]
             # prune_low_gradient_neurons(group, percentages, self.dataset)
-            prune_low_magnitude_neurons(group, percentages)
-            # prune_low_magnitude_connections(group, percentages)
+            # prune_low_magnitude_neurons(group, percentages)
+            prune_low_gradient_connections(group, percentages, self.dataset)
             # prune_random_connections(group, percentages)
             # prune_random_neurons(group, percentages)
 
