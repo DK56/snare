@@ -185,7 +185,9 @@ class Group():
             for value in hist.history['val_acc']:
                 if value > expected - epsilon:
                     print("Found")
-                    Group.state = model.optimizer.get_config()
+                    # Group.state = model.optimizer.get_config()
+                    # symbolic_weights = getattr(model.optimizer, 'weights')
+                    # Group.state = K.batch_get_value(symbolic_weights)
                     tmp.update(ModelWrapper.from_model(
                         load_model(tmp_path), tmp.compile_args,
                         path, "group_" + str(self.id)))

@@ -417,9 +417,9 @@ class ModelWrapper():
         return model
 
     def update(self, to_update):
+        # TODO
         # Update compile_args only if both models have the same amount of layers
-        if(len(to_update.layers) == len(self.layers)):
-            self.compile_args = to_update.compile_args
+        #   self.compile_args = to_update.compile_args
 
         start = self.layers.index(to_update.layers[0])
         for i in range(len(to_update.layers)):
