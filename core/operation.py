@@ -154,6 +154,37 @@ def prune_random_connections(group, percentages):
     _prune_connections(group, percentages, InputPruner.randoms, weights)
 
 
+def prune_low_gradient_connections(group, percentages, dataset):
+    main_layer = group.main_layer
+    weights = main_layer.weights.get()
+
+    model = group.full_wrapper.to_model()
+
+    (x_train, y_train), (x_test, y_test) = dataset
+
+    layer = model.get_layer(main_layer.name)
+    weight_tensors = layer.trainable_weights[0]  # weight tensors
+    print(layer.trainable_weights)
+    gradients = model.optimizer.get_gradients(
+        model.total_loss, weight_tensors)  # gradient tensors
+
+    input_tensors = model.inputs + model.sample_weights + \
+        model._targets + [K.learning_phase()]
+    grad_fn = K.function(inputs=input_tensors,
+                         outputs=gradients)
+    inputs = [x_train, None, y_train, 0]
+
+    grads = grad_fn(inputs)
+    grads = grads[0]
+    print(grads.shape)
+
+    w_abs = np.abs(grads * weights[0])
+    indices = np.argsort(w_abs.flatten())
+
+    weights = main_layer.weights.get()
+    _prune_connections(group, percentages, indices, weights)
+
+
 def _prune_neurons(group, percentages, indices):
     main_layer = group.main_layer
     base = group.base_wrapper
