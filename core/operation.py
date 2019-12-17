@@ -105,16 +105,14 @@ def _prune_connections(group, percentages, indices, weights):
     instances = []
     w = weights[0]
 
-    to_remove = 5
+    remove_amount = 5
     param_amount = np.count_nonzero(w)
 
     print("SIZE:", w.size, "ZEROS:", w.size - np.count_nonzero(w))
 
     for p in percentages:
         to_remove = indices[0: w.size -
-                            param_amount + to_remove]
-        print(to_remove.shape)
-        print(to_remove)
+                            param_amount + remove_amount]
         # param_amount + math.ceil(p * param_amount)]
         print(w.size - param_amount + math.ceil(p * param_amount),
               " / ", param_amount, " / ", w.size)
