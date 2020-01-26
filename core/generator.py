@@ -107,7 +107,7 @@ class Generator():
         assert(best_value > 0)
         return best
 
-    def prepare(self, dataset):
+    def prepare(self, dataset, main_metric, metric_val, batch_size):
         assert os.path.isdir(self.tmp_path)
         assert len(os.listdir(self.tmp_path)) == 0
 
@@ -117,23 +117,6 @@ class Generator():
         gen_path = os.path.join(self.tmp_path, 'gen_0')
         os.mkdir(gen_path)
         base = ModelWrapper.from_model(self.model, self.compile_args, gen_path)
-
-        # TODO
-        # for layer in base.layers:
-        #     self.layer_status[layer] = 4
-        # for layer in base.layers:
-        #     # if layer.name in ['conv1d_4']:
-        #     #     self.layer_status[layer] = 3
-        #     if layer.name in ['conv2d', 'conv2d_1', 'dense', 'dense_1', 'dense_2']:
-        #         self.layer_status[layer] = 0
-        #     if layer.name in ['conv2d_2']:
-        #         self.layer_status[layer] = 3
-        #     if layer.name in ['conv1d_4', 'dense']:
-        #         self.layer_status[layer] = 0
-        #     if layer.name in ['conv1d_3', 'conv1d_2', 'conv1d_1', 'dense_1']:
-        #         self.layer_status[layer] = 1
-        #     if layer.name in ['conv1d']:
-        #         self.layer_status[layer] = 2
 
         self.gen = Generation(0, base, gen_path)
         # self.gens.append(Generation(0, base, gen_path))
@@ -201,6 +184,7 @@ class Generator():
             prune_low_gradient_neurons(group, percentages, self.dataset)
             # prune_low_magnitude_neurons(group, percentages)
             # prune_low_gradient_connections(group, percentages, self.dataset)
+            # prune_low_magnitude_connections(group, percentages)
             # prune_random_connections(group, percentages)
             # prune_random_neurons(group, percentages)
 
