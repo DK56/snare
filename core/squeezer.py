@@ -1,20 +1,16 @@
 import os
+import numpy as np
 from tensorflow.python.keras.models import Sequential
+
 from . import Generator
 from .model_wrapper import LayerWrapper
-from .group import Group
-from tensorflow.python.keras import losses
-import tensorflow as tf
-from tensorflow.python.keras.datasets import mnist
-from tensorflow.python import keras
-import tensorflow.keras.backend as K
-import numpy as np
 
 
 class Squeezer():
     def __init__(self, model: Sequential, compile_args, tmp_path=os.getcwd()):
         self.model = model
         self.compile_args = compile_args
+
         assert os.path.isdir(tmp_path)
         self.tmp_path = os.path.join(tmp_path, 'tmp')
         s = 0
