@@ -110,18 +110,10 @@ class LayerWrapper():
     BATCH_NORM_LAYERS = ['BatchNormalization']
 
     def get_flops(layer):
-        if layer.__class__.__name__ == 'Dense':
+
+        name = layer.__class__.__name__
+        if name == 'Dense':
             return layer.units * (2 + layer.input_shape[1])
-        if layer.__class__.__name__ == 'Flatten':
-            return 0
-        if layer.__class__.__name__ == 'InputLayer':
-            return 0
-        if layer.__class__.__name__ == 'AveragePooling2D':
-            return 0
-        if layer.__class__.__name__ == 'MaxPooling1D':
-            return 0
-        if layer.__class__.__name__ == 'MaxPooling2D':
-            return 0
         if layer.__class__.__name__ == 'Conv1D':
             input_shape = layer.input_shape
             if layer.data_format == "channels_last":
@@ -138,12 +130,6 @@ class LayerWrapper():
 
             flops_per_filter = num_instances_per_filter * ops
             return layer.filters * flops_per_filter
-        if layer.__class__.__name__ == 'BatchNormalization':
-            return 0
-        if layer.__class__.__name__ == 'Dropout':
-            return 0
-        if layer.__class__.__name__ == 'Activation':
-            return 0
         if layer.__class__.__name__ == 'Conv2D':
             input_shape = layer.input_shape
             if layer.data_format == "channels_last":
@@ -157,15 +143,26 @@ class LayerWrapper():
 
             ops = (channels + rows + cols) * 2 - 1
 
+            # first dim
             num_instances_per_filter = (
-                (rows - layer.kernel_size[0] + 1) / layer.strides[0]) + 1  # for rows
+                (rows - layer.kernel_size[0] + 1) / layer.strides[0]) + 1
+            # second dim
             num_instances_per_filter *= (
                 (cols - layer.kernel_size[1] + 1) / layer.strides[1]) + 1
 
             flops_per_filter = num_instances_per_filter * ops
             return layer.filters * flops_per_filter
 
-        print("Unsupported layer", layer.__class__.__name__)
+        IRRELEVANT_LAYERS = ['Flatten', 'InputLayer', 'AveragePooling1D',
+                             'AveragePooling2D', 'AveragePooling3D',
+                             'MaxPooling1D', 'MaxPooling2D', 'MaxPooling3D',
+                             'BatchNormalization', 'Dropout', 'Activation']
+        if name in IRRELEVANT_LAYERS:
+            # Skip all layers, which do not influence flops or only a small
+            # contribution compared to all prunable layers
+            return 0
+
+        print("Unsupported layer", name)
         return 0
 
     def __init__(self, name, classname, config,
