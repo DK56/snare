@@ -1,6 +1,7 @@
+from ..wrappers import ModelWrapper
+
 from copy import deepcopy
 from tensorflow.python.keras import backend as K
-from .model_wrapper import ModelWrapper
 import numpy as np
 
 
@@ -75,9 +76,9 @@ class Generation():
 
 
 
-        # m = result.to_model()
-        # (x_train, y_train), (x_test, y_test) = dataset
-        # test_score = m.evaluate(x_test, y_test)
+        m = result.to_model()
+        (x_train, y_train), (x_test, y_test) = dataset
+        test_score = m.evaluate(x_test, y_test)
         # if test_score[1] > expected:
         #     expected = test_score[1]
 

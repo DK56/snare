@@ -1,8 +1,7 @@
 import numpy as np
 import math
 import copy
-from .model_wrapper import WeightsProvider
-from .group import Group
+from ..wrappers import WeightsProvider, Group
 from tensorflow.python.keras import backend as K
 
 
@@ -105,7 +104,7 @@ def _prune_connections(group, percentages, indices, weights):
     instances = []
     w = weights[0]
 
-    remove_amount = 5
+    remove_amount = 10000
     param_amount = np.count_nonzero(w)
 
     print("SIZE:", w.size, "ZEROS:", w.size - np.count_nonzero(w))

@@ -181,6 +181,19 @@ class Group():
             # print("Finished group", self.id, "new model saved")
             # self.best_index = i
             # return 0
+            # Group.state = model.optimizer.get_config()
+            # symbolic_weights = getattr(model.optimizer, 'weights')
+            # Group.state = K.batch_get_value(symbolic_weights)
+            
+            print("Found")
+            self.result = ModelWrapper.from_model(
+                model, tmp.compile_args,
+                path, "group_" + str(self.id))
+            #    m2, path, "group_" + str(self.id)))
+
+            print("Finished group", self.id, "new model saved")
+            self.best_index = i
+            return update
 
             for value in hist.history['val_acc']:
                 if value > expected - epsilon:

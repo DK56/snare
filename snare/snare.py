@@ -1,17 +1,17 @@
-from .generator import Generator
+from .core.generator import Generator
 
 import os
 from tensorflow.python.keras.models import Sequential
 
 
-class Squeezer():
+class Snare():
     def __init__(self, model: Sequential, compile_args):
         self.model = model
         self.compile_args = compile_args
 
-    def squeeze(self, dataset,
-                threshold, main_metric='val_acc', metric_val=None,
-                batch_size=128, tmp_path=os.getcwd(), verbose=1) -> Sequential:
+    def reduce(self, dataset,
+               threshold, main_metric='val_acc', metric_val=None,
+               batch_size=128, tmp_path=os.getcwd(), verbose=1) -> Sequential:
 
         # Set tmp directory to save upcoming models
         assert os.path.isdir(tmp_path)
@@ -40,7 +40,8 @@ class Squeezer():
             if verbose > 0:
                 print("Reference", main_metric, ":", hist[1])
 
-        generator = Generator(self.model, self.compile_args, model_path)
+        generator = Generator(self.model, self.compile_args,
+                              model_path, verbose=verbose)
         # Create first generation
         generator.prepare(dataset, main_metric, metric_val, batch_size)
 

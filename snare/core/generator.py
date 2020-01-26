@@ -6,8 +6,7 @@ from tensorflow.python.keras.models import Sequential
 from tensorflow.python.keras import backend as K
 from tensorflow.python.keras import losses
 from .generation import Generation
-from .group import Group
-from .model_wrapper import ModelWrapper
+from ..wrappers import Group, ModelWrapper
 from .operation import prune_random_connections, prune_low_activation_neurons, prune_low_gradient_connections, prune_low_magnitude_connections, prune_low_gradient_neurons, prune_low_magnitude_neurons, prune_random_neurons, InputPruner, NeuronPruner
 
 
@@ -89,12 +88,13 @@ class Generator():
 
         self.layer_status = new_status
 
-    def get_best_layer(self):
+    def get_best_layer(self, beta=1, gamma=1):
         base = self.get_current_gen().result
         best_value = 0
+
         for layer in base.layers:
             p, n_score, p_score, f_score = self.layer_status[layer]
-            score = p * (n_score + p_score + f_score)
+            score = p * (n_score + beta * p_score + gamma*f_score)
             if score > best_value:
                 best = layer
                 best_value = score

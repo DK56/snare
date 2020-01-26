@@ -1,11 +1,10 @@
 import os
-import json
 import numpy as np
 from abc import ABC, abstractmethod
 from tensorflow.python.keras.models import Sequential
 from tensorflow.python.keras import layers
-from typing import List, Dict
 from tensorflow.python.keras import backend as K
+from typing import Dict
 
 
 class CustomConv(layers.Conv1D):
@@ -166,7 +165,8 @@ class LayerWrapper():
         return 0
 
     def __init__(self, name, classname, config,
-                 neurons, params, flops, input_shape, output_shape, weights: WeightsDict):
+                 neurons, params, flops, input_shape,
+                 output_shape, weights: WeightsDict):
         self.name = name
         self.classname = classname
         self.config = config
@@ -242,8 +242,8 @@ class LayerWrapper():
 
     def __copy__(self):
         return type(self)(self.name, self.classname, self.config.copy(),
-                          self.neurons, self.params, self.flops, self.input_shape,
-                          self.output_shape, self.weights)
+                          self.neurons, self.params, self.flops,
+                          self.input_shape, self.output_shape, self.weights)
 
     def __repr__(self):
         return self.name
@@ -406,7 +406,8 @@ class ModelWrapper():
                 mask = ((w > 0.001) | (w < -0.001)).astype(int)
 
                 layer = CustomConv(
-                    layer.filters, layer.kernel_size, mask, padding=layer.padding, name=layer.name)
+                    layer.filters, layer.kernel_size, mask,
+                    padding=layer.padding, name=layer.name)
             model.add(layer)
             weights = l_wrapper.weights.get()
             layer.set_weights(weights)
@@ -415,7 +416,7 @@ class ModelWrapper():
 
     def update(self, to_update):
         # TODO
-        # Update compile_args only if both models have the same amount of layers
+        # Update compile_args only if both models have equal tamount of layers
         #   self.compile_args = to_update.compile_args
 
         start = self.layers.index(to_update.layers[0])
