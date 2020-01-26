@@ -15,10 +15,11 @@ class Generator():
     IMPORTANT = ['conv2d', 'conv2d_1', 'conv1d', 'conv1d_1',
                  'conv1d_2', 'conv1d_3', 'conv1d_4', 'dense', 'dense_1']
 
-    def __init__(self, model: Sequential, compile_args, tmp_path):
+    def __init__(self, model: Sequential, compile_args, tmp_path, verbose):
         self.model = model
         self.compile_args = compile_args
         self.tmp_path = tmp_path
+        self.verbose = verbose
         # self.gens = []
         self.current_gen = -1
         self.layer_status = {}
@@ -31,17 +32,23 @@ class Generator():
         base = self.get_current_gen().result
         new_status = self.layer_status
 
-        # (% percentage, % filters, % params, % flops)
         if self.current_gen == 0:
+            # Initialize all scores
+            # (% percentage, % filters, % params, % flops)
+
             for layer in base.layers:
                 new_status[layer] = (0, 0, 0, 0)
 
             for layer in base.layers:
                 if layer.is_important():
-                    new_status[layer] = (32, 0, 0, 0)
-                if(layer.name == "dense_2"):
-                    new_status[layer] = (0, 0, 0, 0)
+                    # Set initial pruning percentage per step to 64%
+                    new_status[layer] = (64, 0, 0, 0)
+                    last = layer
 
+            # Last layer cannot be reduced
+            new_status[last] = (0, 0, 0, 0)
+
+        # Calculate neurons, parameters and flops of current model
         m_neurons = 0
         m_params = 0
         m_flops = 1
@@ -50,21 +57,11 @@ class Generator():
             m_params += layer.params
             m_flops += layer.flops
 
-        print("FLOPS:", m_flops)
-        print("Params:", m_params)
-
         next_flops = 0
         next_params = 0
 
         for layer in reversed(base.layers):
-            # if(layer.name == "conv1d"):
-            #     new_status[layer] = (
-            #         1, 1, 1, 1)
-            # else:
-            #     new_status[layer] = (
-            #         0, 0, 0, 0)
-            # continue
-
+            # Calculate layer score for current layer
             p, _, _, _ = new_status[layer]
 
             skip = False
@@ -73,8 +70,6 @@ class Generator():
             elif p <= 2:
                 new_status[layer] = (0, 0, 0, 0)
                 skip = True
-            elif (p * layer.neurons) / 100 == (4 * layer.neurons) / 100:
-                p = 4
 
             if skip:
                 if layer.is_important():
