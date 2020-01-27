@@ -1,13 +1,20 @@
 from ..wrappers import ModelWrapper
 
-from copy import deepcopy
 from tensorflow.python.keras import backend as K
-import numpy as np
 
 
 class Generation():
+    """A generation of SNARE which contains groups of layers.
+    Each group can be evaluated separately and retrained.
+    """
 
     def __init__(self, number, base, path):
+        """
+        Args:
+          number: The current generation number.
+          base: The base group of all following groups.
+          path: Directory-path to save all ModelWrappers of this gen.
+        """
         self.path = path
         self.number = number
         self.base = base
@@ -17,12 +24,23 @@ class Generation():
         self.result = base
 
     def add_group(self, group):
+        """ Adds a group to this gen.
+
+        Args:
+          group: The group to add.
+        """
         self.groups.append(group)
 
-    def train_result(self, dataset, **kwargs):
+    def train_result(self, dataset, compile_args):
+        """ Trains result of this generation.
+
+        Args:
+          dataset: The trainings-dataset.
+          compile_args: All keras-compile arguments to compile this model
+        """
         (x_train, y_train), (x_test, y_test) = dataset
         model = self.result.to_model()
-        model.compile(**kwargs)
+        model.compile(**compile_args)
         hist = model.fit(x=x_train, y=y_train,
                          epochs=10, batch_size=128,
                          validation_data=(x_test, y_test), verbose=1)
@@ -33,14 +51,32 @@ class Generation():
         model.summary()
 
     def infer_training_set(self, dataset):
+        """ Creates necessary trainings-data forall groups. Starting from the input,
+        it traverses all groups to infer input-data for subsequent groups.
+
+        Args:
+          dataset: The trainings-dataset.
+        """
         (x_train, _), _ = dataset
+        # Only infer 2000 examples to reduce space consumption
         current_in = x_train[0:2000]
         for group in self.groups:
             current_in = group.infer_base(current_in)
-        print("INFER DATASET FINISHED")
 
-    def eval_groups(self, dataset, expected, epsilon, **kwargs):
+    def eval_groups(self, dataset, expected, epsilon):
+        """ Evaluates all groups and thus this generation. Currently, there is only 
+        one pruned group in each generation.
+
+        Args:
+          dataset: The trainings-dataset.
+          expected: The reference value of the evaluation metric.
+          epsilon: The accepted change of the evaluation metric.
+          compile_args: All keras-compile arguments to compile a group
+        """
         assert len(self.group_best) == 0
+
+        # Clean all TensorFlow graphs
+        # Time-consuming, but necessary to prevent out-of-memory failures
         K.clear_session()
 
         # self.infer_training_set(dataset)
@@ -59,13 +95,12 @@ class Generation():
 
             group.full_wrapper = result
 
+            # Evaluate a group
             p_update = group.eval_full(
-                dataset, expected, epsilon, self.path, **kwargs)
-
-            # p_update = group.eval(
-            #     dataset, expected, epsilon, self.path, **kwargs)
+                dataset, expected, epsilon, self.path)
 
             if p_update < 2:
+                # Apply change of successful pruning operation
                 result.update(group.result)
 
             print()
@@ -74,36 +109,10 @@ class Generation():
             print("------------------------------------------------")
             print()
 
-
-
+        # Evaluate resulting model
         m = result.to_model()
         (x_train, y_train), (x_test, y_test) = dataset
         test_score = m.evaluate(x_test, y_test)
-        # if test_score[1] > expected:
-        #     expected = test_score[1]
-
-        # print("Retrain another 5 epochs")
-
-        # m = result.to_model()
-        # m.compile(**kwargs)
-        # m.evaluate(x_test, y_test)
-
-        # m.fit(x=x_train, y=y_train,
-        #       epochs=5, batch_size=128,
-        #       validation_data=(x_test, y_test), verbose=1)
-
-        # if hist.history['val_acc'][-1] > expected - 0.5 * epsilon:
-        #     base = ModelWrapper.from_model(model, self.path,
-        #                                    "result" + str(group.id))
-        #     self.result = base
-        # else:
-        #     print("Retrain does not restore enough!")
-        #     group.best_index += 1
-
-        # print("Non-zero:",
-        #       np.count_nonzero(m.get_layer("dense").get_weights()[0]))
-        # base = ModelWrapper.from_model(m, self.path,
-        #                                "result" + str(group.id))
 
         # self.result = base
-        return p_update
+        return p_update, test_score

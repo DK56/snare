@@ -60,7 +60,7 @@ class Snare():
             # Create all potential operations on groups of layers
             gen = generator.build_next_gen()
             # Evaluate all groups
-            update_value = gen.eval_groups(dataset, metric_val, threshold)
+            update_value, _ = gen.eval_groups(dataset, metric_val, threshold)
             generator.update_status(update_value)
 
             if verbose > 0:
