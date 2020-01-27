@@ -137,74 +137,28 @@ class Group():
         print("Main layer =", self.main_layer)
 
         update = 0
-        # if self.main_layer.name != 'block5_conv3':
-        #     tmp = self.full_wrapper.copy()
-        #     m1, _ = tmp.to_splitted_model(20)
-        #     x = m1.predict(x_train)
-        #     x_t = m1.predict(x_test)
 
         for i, instance in enumerate(self.instances):
 
             tmp = self.full_wrapper.copy()
             tmp.update(instance)
 
-            # m1, m2 = tmp.to_splitted_model(20)
             model = tmp.to_model()
-            # model = tmp.to_trainable_model()
-            # model.compile(compile_args)
-
-            # m1.compile(**kwargs)
-            # m1.summary()
-            # m2.compile(**kwargs)
-            # m2.summary()
             tmp_path = os.path.join(path, 'tmp_result.h5')
             checkpoint = ModelCheckpoint(
                 tmp_path, monitor='val_acc', verbose=0,
                 save_best_only=True, mode='max')
 
             hist = model.fit(x=x_train, y=y_train,
-                             epochs=20, batch_size=128,
+                             epochs=5, batch_size=128,
                              validation_data=(x_test, y_test),
                              callbacks=[checkpoint], verbose=2)
-
-            # if self.main_layer.name == 'block5_conv3':
-            #     x = m1.predict(x_train)
-            #     x_t = m1.predict(x_test)
-
-            # hist = m2.fit(x=x, y=y_train,
-            #               epochs=15, batch_size=64,
-            #               validation_data=(x_t, y_test), verbose=1)
-
-            # self.result = ModelWrapper.from_model(
-            #     model, path, "group_" + str(self.id))
-
-            # print("Finished group", self.id, "new model saved")
-            # self.best_index = i
-            # return 0
-            # Group.state = model.optimizer.get_config()
-            # symbolic_weights = getattr(model.optimizer, 'weights')
-            # Group.state = K.batch_get_value(symbolic_weights)
             
-            print("Found")
-            self.result = ModelWrapper.from_model(
-                model, tmp.compile_args,
-                path, "group_" + str(self.id))
-            #    m2, path, "group_" + str(self.id)))
-
-            print("Finished group", self.id, "new model saved")
-            self.best_index = i
-            return update
-
             for value in hist.history['val_acc']:
                 if value > expected - epsilon:
-                    print("Found")
-                    # Group.state = model.optimizer.get_config()
-                    # symbolic_weights = getattr(model.optimizer, 'weights')
-                    # Group.state = K.batch_get_value(symbolic_weights)
                     tmp.update(ModelWrapper.from_model(
                         load_model(tmp_path), tmp.compile_args,
                         path, "group_" + str(self.id)))
-                    #    m2, path, "group_" + str(self.id)))
                     self.result = tmp
 
                     print("Finished group", self.id, "new model saved")
