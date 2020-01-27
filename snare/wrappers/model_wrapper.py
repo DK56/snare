@@ -223,53 +223,6 @@ class ModelWrapper():
             compile_args['loss'] = 'mse'
             return cls(layers, compile_args)
 
-    # @staticmethod
-    # def _save_configs(configs, path, suffix=None):
-    #     assert os.path.exists(path)
-    #     assert os.path.isdir(path)
-
-    #     if suffix:
-    #         config_file = 'config_' + suffix + '.json'
-    #     else:
-    #         config_file = 'config.json'
-
-    #     for layer_name, config in configs:
-    #         layer_dir = os.path.join(path, layer_name)
-    #         if not os.path.exists(layer_dir):
-    #             os.mkdir(layer_dir)
-
-    #         config_path = os.path.join(layer_dir, config_file)
-    #         assert not os.path.exists(config_path)
-
-    #         config_json = json.dumps(config)
-
-    #         with open(config_path, 'w+') as f:
-    #             f.write(config_json)
-
-    # @staticmethod
-    # def _save_weights(weights, path, suffix=None):
-    #     assert os.path.exists(path)
-    #     assert os.path.isdir(path)
-
-    #     if suffix:
-    #         weights_file = 'weights_' + suffix + '.npy'
-    #     else:
-    #         weights_file = 'weights.npy'
-
-    #     for layer_name, layer_weights in weights:
-    #         layer_dir = os.path.join(path, layer_name)
-    #         if not os.path.exists(layer_dir):
-    #             os.mkdir(layer_dir)
-
-    #         w = FileWeights(os.path.join(layer_dir, weights_file))
-    #         w.save(layer_weights.get())
-
-    # def save_configs(self, path, suffix=None):
-    #     self._save_configs(self.layer_configs, path, suffix)
-
-    # def save_weights(self, path, suffix=None):
-    #     self._save_weights(self.layer_weights, path, suffix)
-
     def to_model(self):
         model = Sequential()
 
