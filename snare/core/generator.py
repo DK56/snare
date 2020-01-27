@@ -141,21 +141,6 @@ class Generator():
         os.mkdir(gen_path)
 
         gen = Generation(current_gen, base, gen_path)
-
-        # if current_gen % 2:
-        #     groups = Group.create_groups(base, 1, 0)
-        # else:
-        #     groups = Group.create_groups(base, 2, 1)
-
-        # if best.name in ['conv1d', 'conv1d_2', 'conv1d_4', 'dense_1']:
-        # if best.name in ['conv2d', 'dense']:
-        # if best.name in ['block1_conv1', 'block2_conv1', 'block3_conv1', 'block3_conv3', 'block4_conv2', 'block5_conv1', 'block5_conv3', 'dense_1']:
-        # if best.name in ['dense_1']:
-        #     groups = Group.create_groups(base, 2, 3)
-        # else:
-        #     groups = Group.create_groups(base, 2, 0)
-        # groups = Group.create_groups(base, 1, 0)
-
         groups = Group.find_layer_groups(best.name, base)
 
         print()
@@ -177,11 +162,6 @@ class Generator():
             else:
                 percentages = [p / 100.]
             prune_low_gradient_neurons(group, percentages, self.dataset)
-            # prune_low_magnitude_neurons(group, percentages)
-            # prune_low_gradient_connections(group, percentages, self.dataset)
-            # prune_low_magnitude_connections(group, percentages)
-            # prune_random_connections(group, percentages)
-            # prune_random_neurons(group, percentages)
 
         print()
         print("------------------------------------------------")
