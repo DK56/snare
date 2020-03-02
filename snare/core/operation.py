@@ -98,23 +98,31 @@ class InputPruner(Operation):
 
 
 def _prune_connections(group, percentages, indices, weights):
+    """Removes connections from the main layer in group.
+    Creates a new group instance foreach value in percentages.
+    The amount of remaining connections is specified by this value.
+
+    Args:
+      group: Group of layers to remove from.
+      percentages: Percentages of remaining connections.
+      indices: Order of connections from least to most important.
+      weights: Connection values.
+    """
     base = group.base_wrapper
     main_layer = group.main_layer
     main_index = base.layers.index(main_layer)
     instances = []
     w = weights[0]
 
-    remove_amount = 10000
+    # Count remaining weights
     param_amount = np.count_nonzero(w)
 
-    print("SIZE:", w.size, "ZEROS:", w.size - np.count_nonzero(w))
-
     for p in percentages:
+        # Keep only p of all non-zero parameters
         to_remove = indices[0: w.size -
-                            param_amount + remove_amount]
-        # param_amount + math.ceil(p * param_amount)]
-        print(w.size - param_amount + math.ceil(p * param_amount),
-              " / ", param_amount, " / ", w.size)
+                            param_amount + math.ceil(p * param_amount)]
+
+        # Create a new instance
         instance = base.copy()
 
         main_layer = instance.layers[main_index]
@@ -183,6 +191,15 @@ def prune_low_gradient_connections(group, percentages, dataset):
 
 
 def _prune_neurons(group, percentages, indices):
+    """Removes neurons from the main layer in group.
+    Creates a new group instance foreach value in percentages.
+    The amount of neurons is specified by this value.
+
+    Args:
+      group: Group of layers to remove from.
+      percentages: Percentages of remaining neurons.
+      indices: Order of neurons from least to most important.
+    """
     main_layer = group.main_layer
     base = group.base_wrapper
     instances = []
@@ -191,24 +208,27 @@ def _prune_neurons(group, percentages, indices):
 
     for p in percentages:
         to_remove = indices[0: math.ceil(p * indices.size)]
-        print("Prune", int(p * 100), "%:",
-              len(indices[0: math.ceil(p * indices.size)]), "neurons")
+        # Create a new instance
         instance = base.copy()
 
         main_layer = instance.layers[main_index]
+        # Remove specified neurons
         main_layer.apply_operation(
             NeuronPruner(to_remove, main_layer.weights))
 
+        # Search for next important layer
         next_index = main_index + 1
         next_layer = instance.layers[next_index]
         while not next_layer.is_important():
             if next_layer.is_batch_norm():
+                # Reduce the input size of batch-norm layers
                 next_layer.apply_operation(InputPruner(
                     to_remove, indices.size, next_layer.weights))
 
             next_index += 1
             next_layer = instance.layers[next_index]
 
+        # Remove all parameters, which weight a removed neuron
         next_layer = instance.layers[next_index]
         next_layer.apply_operation(InputPruner(
             to_remove, indices.size, next_layer.weights))
