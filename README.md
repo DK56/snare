@@ -6,7 +6,7 @@ SNARE is a new optimization approach to reduce trained neural networks in size. 
 
 ## Installation
 
-SNARE requires [TensorFlow] v1.14.0 to run. To install SNARE and all dependencies use:
+SNARE requires [TensorFlow] v1.15.2 to run. To install SNARE and all dependencies use:
 
 [TensorFlow]: <https://tensorflow.org>
 
