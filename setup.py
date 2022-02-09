@@ -17,7 +17,7 @@ setup(
     url='https://github.com/dk56/snare',
     packages=find_namespace_packages(include=['snare.*']),
     install_requires=['numpy>=1.16.0',
-                      'tensorflow-gpu==1.15.2'],
+                      'tensorflow-gpu==2.5.3'],
     license='MIT',
     classifiers=[
         'License :: OSI Approved :: MIT License',
